@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+	
+	<!-- MongoDB数据库连接池 -->
+	<bean id="mongoClient" class="com.mongodb.MongoClient">
+      <constructor-arg type="java.lang.String" value="localhost"></constructor-arg>
+      <constructor-arg type="int" value="27017"></constructor-arg>
+ 	</bean>
+ 	
+ 	<bean id="morphia" class="org.mongodb.morphia.Morphia"></bean>
+ 	
+ 	<!-- DAO -->
+ 	<bean id="profileDao" class="iscas.dao.ProfileDaoImpl">
+ 	  <constructor-arg type="com.mongodb.MongoClient" ref="mongoClient"></constructor-arg>
+ 	  <constructor-arg type="org.mongodb.morphia.Morphia" ref="morphia"></constructor-arg>
+ 	  <constructor-arg type="java.lang.String" value="pminer"></constructor-arg>
+ 	</bean>
+ 	
+ 	<bean id="profileBackupDao" class="iscas.dao.ProfileBackupDaoImpl">
+ 	  <constructor-arg type="com.mongodb.MongoClient" ref="mongoClient"></constructor-arg>
+ 	  <constructor-arg type="org.mongodb.morphia.Morphia" ref="morphia"></constructor-arg>
+ 	  <constructor-arg type="java.lang.String" value="pminerbackup"></constructor-arg>
+ 	</bean>
+ 	
+ 	<bean id="userDao" class="iscas.dao.UserDaoImpl">
+ 	  <constructor-arg type="com.mongodb.MongoClient" ref="mongoClient"></constructor-arg>
+ 	  <constructor-arg type="org.mongodb.morphia.Morphia" ref="morphia"></constructor-arg>
+ 	  <constructor-arg type="java.lang.String" value="pminer"></constructor-arg>
+ 	</bean>
+ 	
+ 	<!-- Service -->
+ 	<bean id="profileService" class="iscas.service.ProfileServiceImpl">
+ 	  <property name="profileDao" ref="profileDao"/>
+ 	  <property name="profileBackupDao" ref="profileBackupDao"/>
+ 	</bean>
+ 	
+ 	<bean id="userService" class="iscas.service.UserServiceImpl">
+ 	  <property name="userDao" ref="userDao"/>
+ 	  <property name="passwordHelper" ref="passwordHelper"/>
+ 	</bean>
+ 	
+ 	<bean id="passwordHelper" class="iscas.service.PasswordHelper">
+      <property name="algorithmName" value="md5"/>
+      <property name="hashIterations" value="2"/>
+    </bean>
+</beans>

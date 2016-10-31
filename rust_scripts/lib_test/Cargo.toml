@@ -1,0 +1,12 @@
+[package]
+name = "lib_test"
+version = "0.1.0"
+authors = ["hellmonky <hellmonky@qq.com>"]
+
+[dependencies]
+
+[lib]
+#默认，Rust 编译为一个“rlib”，一个 Rust 特定的格式。也就是用lib作为creat-type;
+#平台相关的库的生成使用dylib，这样在linux下生成so，在windows下生成dll
+name = "lib_test_out"
+crate-type = ["dylib"]

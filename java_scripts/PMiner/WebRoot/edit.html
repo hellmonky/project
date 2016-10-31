@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>人员信息编辑</title>
+    <meta name="keywords" content="pminer,edit,profile,编辑,人物">
+    <meta name="description" content="Pminer compare">
+    <meta name="content-type" content="text/html; charset=UTF-8">
+
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/main.css">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="http://cdn.bootcss.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="http://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <script src="js/jsoneditor.min.js"></script>
+    <script>
+      // Set the default CSS theme and icon library globally
+      JSONEditor.defaults.theme = 'bootstrap3';
+      JSONEditor.defaults.iconlib = 'fontawesome4';
+      JSONEditor.defaults.options.object_layout = 'grid';
+    </script>
+  </head>
+  <body>
+    <div class="container-fluid" >
+      <div class="row" style="color:white;background-color:#4791D2;" id="table">
+        <div class="col-md-2 col-md-offset-1" style="padding:30px;">
+          <span class="glyphicon glyphicon-home">
+            <a href="index.html" style="color:white;">回到首页</a>
+          </span>
+          <span class="glyphicon glyphicon-user">
+            <a href="searchById.action" style="color:white;" id="profileHref">返回个人履历</a>
+          </span>
+        </div>
+
+        <div class="col-md-5" style="padding:20px;">
+          <form action="searchByName.action" role="form" method="post">
+            <div class="input-group">
+              <label class="sr-only" for="exampleInputName">Profile Name</label>
+              <input type="text" class="form-control typeahead"  placeholder="请输入姓名" name="name" id="name">
+              <span class="input-group-btn">
+                <button class="btn btn-primary" id="btnSubmit" type="submit">搜索</button>
+              </span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+          <div id="editor_holder">
+          </div>
+        </div>
+        <div class="col-md-1" style="padding:20px">
+          <button class="btn btn-primary" id='submit'>保存并提交</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/typeahead.bundle.min.js"></script>
+    <script src="js/input-autocomplete.js"></script>
+    <script>
+      // 从url中获取name参数
+      var urlParams;
+      (window.onpopstate = function () {
+	    var match,
+	    pl     = /\+/g,  // Regex for replacing addition symbol with a space
+	    search = /([^&=]+)=?([^&]*)/g,
+	    decode = function (s) { return decodeURIComponent(s.replace(pl, " ")); },
+	    query  = window.location.search.substring(1);
+	    urlParams = {};
+	    while (match = search.exec(query))
+	      urlParams[decode(match[1])] = decode(match[2]);
+      })();
+
+      var profileId = urlParams["id"];
+      document.getElementById('profileHref').href = "searchById.action?id=" + profileId;
+
+      var element = document.getElementById('editor_holder');
+      var editor = new JSONEditor(element, {
+        schema : {
+          "type" : "object",
+          "title" : "人员履历",
+          "format": "grid",
+          properties : {
+            id : {
+              "title" : "档案id",
+              "type" : "string",
+              "propertyOrder" : 1
+            },
+            name : {
+              "title" : "姓名",
+              "type" : "string",
+              "propertyOrder" : 10,
+              "maxLength" : 3
+            },
+            gender : {
+              "title" : "性别",
+              "type" : "string",
+              "propertyOrder" : 11,
+              "enum" : [ "男", "女" ]
+            },
+            nation : {
+              "title" : "民族",
+              "type" : "string",
+              "propertyOrder" : 12
+            },
+            birthProvince : {
+              "title" : "出生省",
+              "type" : "string",
+              "propertyOrder" : 13
+            },
+            birthCity : {
+              "title" : "市",
+              "type" : "string",
+              "propertyOrder" : 14
+            },
+            birthDistrict : {
+              "title" : "区",
+              "type" : "string",
+              "propertyOrder" : 15
+            },
+            age : {
+              "title" : "年龄",
+              "type" : "string",
+              "propertyOrder" : 16
+            },
+            birthDate : {
+              "title" : "出生日期",
+              "type" : "string",
+              "propertyOrder" : 17
+            },
+            partyDate : {
+              "title" : "入党日期",
+              "type" : "string",
+              "propertyOrder" : 18
+            },
+            workDate : {
+              "title" : "工作日期",
+              "type" : "string",
+              "propertyOrder" : 19
+            },
+            studyRecord : {
+              "title" : "学习经历",
+              "type" : "array",
+              "format" : "tabs",
+              "items" : {
+                "type" : "object",
+                "title" : "学习经历",
+                "properties" : {
+                  "startDate" : {
+                    "title" : "起始日期",
+                    "type" : "string",
+                    "propertyOrder" : 100
+                  },
+                  "endDate" : {
+                    "title" : "结束日期",
+                    "type" : "string",
+                    "propertyOrder" : 101
+                  },
+                  "universityName" : {
+                    "title" : "学校",
+                    "type" : "string",
+                    "propertyOrder" : 102
+                  },
+                  "province" : {
+                    "title" : "所在省",
+                    "type" : "string",
+                    "propertyOrder" : 103
+                  },
+                  "city" : {
+                    "title" : "市",
+                    "type" : "string",
+                    "propertyOrder" : 104
+                  },
+                  "school" : {
+                    "title" : "学院",
+                    "type" : "string",
+                    "propertyOrder" : 105
+                  },
+                  "province" : {
+                    "title" : "学校",
+                    "type" : "string",
+                    "propertyOrder" : 106
+                  },
+                  "department" : {
+                    "title" : "系",
+                    "type" : "string",
+                    "propertyOrder" : 107
+                  },
+                  "major" : {
+                    "title" : "专业",
+                    "type" : "string",
+                    "propertyOrder" : 108
+                  },
+                  "diploma" : {
+                    "title" : "学历",
+                    "type" : "string",
+                    "propertyOrder" : 109
+                  },
+                  "degree" : {
+                    "title" : "学位",
+                    "type" : "string",
+                    "propertyOrder" : 110
+                  },
+                  "universityIs211" : {
+                    "options": {"hidden": true}
+                  },
+                  "universityIs985" : {
+                    "options": {"hidden": true}
+                  },
+                }
+                }
+            },
+            officeRecord : {
+              "title" : "工作经历",
+              "type" : "array",
+              "format" : "tabs",
+              "items" : {
+                "type" : "object",
+                "title" : "工作经历",
+                "properties": {
+                  "startDate" : {
+                    "title" : "起始日期",
+                    "type" : "string"
+                  },
+                  "endDate" : {
+                    "title" : "结束日期",
+                    "type" : "string"
+                  },
+                  "province" : {
+                    "title" : "所在省",
+                    "type" : "string"
+                  },
+                  "city" : {
+                    "title" : "市",
+                    "type" : "string"
+                  },
+                  "district" : {
+                    "title" : "区",
+                    "type" : "string"
+                  },
+                  "rank" : {
+                    "title" : "职级",
+                    "type" : "string"
+                  },
+                  "tupleList" : {
+                    "title" : "职位列表",
+                    "type" : "array",
+                    "format" : "tabs",
+                    "items" : {
+                      "type" : "object",
+                      "title" : "职位",
+                      "properties": {
+                        "content" : {
+                          "title" : "职位名称",
+                          "type" : "string"
+                        },
+                        "rank" : {
+                          "title" : "职位级别",
+                          "type" : "string"
+                                            },
+                        "unitNameList" : {
+                          "title" : "单位名称列表",
+                          "type" : "array",
+                          "format" : "tabs",
+                          "items" : {
+                            "type" : "string",
+                            "title" : "单位名称"
+                          }
+                        },
+                        "unitRankList" : {
+                          "title" : "单位级别列表",
+                          "type" : "array",
+                          "format" : "tabs",
+                          "items" : {
+                            "type" : "string",
+                            "title" : "单位级别"
+                          }
+                        },
+                        "postArray" : {
+                          "title" : "职位列表",
+                          "type" : "array",
+                          "format" : "tabs",
+                          "items" : {
+                            "type" : "object",
+                            "title" : "职位信息",
+                            "properties" : {
+                              "name" : {
+                                "type" : "string"
+                              },
+                              "rank" : {
+                                "type" : "string"
+                              }
+                            }
+                          }
+                        },
+                      }
+                    }
+                  }
+                },
+              }
+            },
+            latestOfficeRecord : {
+              "options": {"hidden": true}
+            },
+            rawText : {
+              "title" : "详细简历",
+              "type" : "string",
+              "format" : "textarea",
+              "propertyOrder" : 100
+            },
+            level : {
+              "title" : "档案分级",
+              "type" : "string",
+              "enum" : [ "1", "2", "3" ],
+              "propertyOrder" : 110
+            },
+            xmlPath : {
+              "options": {"hidden": true}
+            }
+          }
+        },
+        disable_edit_json : true,
+        disable_properties : true,
+        //disable_array_add : true,
+        //disable_array_delete : false,
+        //disable_array_reorder : true,
+        theme : 'bootstrap3',
+        no_additional_properties: true
+      });
+      /*
+      $("#name").keydown(function(event) {
+        if (event.which == "13") {//回车键，用.ajax提交表单
+          $("#btnSubmit").trigger("click");
+        }
+      });
+      */
+      function find() {
+        $.ajax({ //采用jQuery Ajax方法
+          type : "post",
+          dataType : "json", //返回数据类型是JSON数据格式
+          data : {
+            id : profileId
+          },
+          url : "find.action",
+          success : function(data) {
+            // data是Profile的JSON格式
+            editor.setValue(data); //id查找对应唯一的数据
+          }
+        });
+      };
+      // Hook up the submit button to log to the console
+      document.getElementById('submit').addEventListener('click',function() {
+          // Get the value from the editor
+          var name = editor.getEditor('root.name').value;
+          var id = editor.getEditor('root.id').value;
+          if (name == '' || id == '')
+            alert("数据为空");
+          else {
+            var sendData = JSON.stringify(editor.getValue());
+            $.ajax({ //采用jQuery Ajax方法
+              type : "post",
+              dataType : "json", //返回数据类型是JSON数据格式
+              data : {
+                jsonProfile : sendData
+              },
+              url : "save.action",
+              success : function(data) {
+                alert("人员履历数据已保存！")
+              }
+            });
+          }
+      });
+      if (typeof(profileId) != undefined) {
+        find();
+      }
+    </script>
+  </body>
+</html>

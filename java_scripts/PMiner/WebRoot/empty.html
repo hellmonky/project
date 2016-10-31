@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    <!-- Standard Meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Ops,出现错误了！</title>
+    <meta name="keywords" content="pminer,error,empty,错误,空">
+    <meta name="description" content="Pminer error page">
+    <meta name="content-type" content="text/html; charset=UTF-8">
+
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="http://cdn.bootcss.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="http://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="container-fluid">
+      <div class="row" style="color:white;background-color:#4791D2;" id="table">
+        <div class="col-md-2 col-md-offset-1" style="padding:30px;">
+          <span class="glyphicon glyphicon-home">
+            <a href="index.html" style="color:white;">回到首页</a>
+          </span>
+        </div>
+
+        <div class="col-md-5" style="padding:20px;">
+          <form action="searchByName.action" role="form" method="post">
+            <div class="input-group">
+              <label class="sr-only" for="exampleInputName">Profile Name</label>
+              <input type="text" class="form-control typeahead"  placeholder="请输入姓名" name="name" id="name">
+              <span class="input-group-btn">
+                <button class="btn btn-primary" type="submit">搜索</button>
+              </span>
+            </div>
+          </form>
+        </div>
+
+        <div class="col-md-4" style="padding:20px;">
+          <h5 id="digitaltime"></h5>
+        </div>
+      </div>
+
+      <br>
+
+      <div class="row">
+        <div class="col-md-4 col-md-offset-3">
+          <h3>所搜索的人物不存在！</h3>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/digitaltime.js"></script>
+    <script src="js/typeahead.bundle.min.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>

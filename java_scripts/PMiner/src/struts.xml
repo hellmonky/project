@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC "-//Apache Software Foundation//DTD Struts Configuration 2.1//EN" "http://struts.apache.org/dtds/struts-2.1.dtd">
+<struts>
+	<constant name="struts.multipart.maxSize" value="102400000000"/>
+    <constant name="struts.devMode" value="true"/>
+    <constant name="struts.configuration.xml.reload" value="true"/>
+    <constant name="struts.i18n.encoding" value="UTF-8"/>
+    <constant name="struts.i18n.reload" value="true" />
+    <constant name="struts.serve.static.browserCache" value="false"/>
+    <constant name="struts.ui.theme" value="simple"/>
+    <constant name="struts.objectFactory" value="spring"/>
+    <constant name="struts.action.extension" value="do,action,," /> 
+	
+	<package name="json" extends="json-default" >
+		<action name="readNewsTxt" class="txtReadAction" method="readNewsTxt">
+			<result type="json">
+				<param name="root">jsonWReadNews</param>
+			</result>
+		</action>
+		
+		<action name="readAppointTxt" class="txtReadAction" method="readAppointTxt">
+			<result type="json">
+				<param name="root">jsonWReadAppoint</param>
+			</result>
+		</action>
+		
+		<action name="readAppointDir" class="appointReadAction" method="readAppointDir">
+			<result type="json">
+				<param name="root">name</param>
+			</result>
+		</action>
+		
+		<action name="getAppointListByProvince" class="appointReadAction" method="getAppointListByProvince">
+			<result type="json">
+				<param name="root">jsonNameList</param>
+			</result>
+		</action>
+		
+		<action name="getAppointProvinceList" class="appointReadAction" method="getAppointProvinceList">
+			<result type="json">
+				<param name="root">jsonProvinceList</param>
+			</result>
+		</action>
+	</package>
+	
+	<package name="jsonDB" extends="json-default">
+		<action name="find" class="profileAction" method="find">
+			<result type="json">
+				<param name="root">profile</param>
+				<param name="excludeProperties">
+					.*\.ds
+				</param>
+				<param name="excludeNullProperties">false</param>
+			</result>
+		</action>
+		
+		<action name="save" class="profileAction" method="save">
+			<result type="json">
+				<param name="root">name</param>
+			</result>
+		</action>
+		
+		<action name="findAllRelationship" class="profileAction" method="findAllRelationship">
+			<result type="json">
+				<param name="root">jsonObjectInfo</param>
+			</result>
+		</action>
+		
+		<action name="findBasicInfo" class="profileAction" method="findBasicInfo">
+			<result type="json">
+				<param name="root">jsonObjectInfo</param>
+			</result>
+		</action>
+		
+		<action name="find*" class="profileAction" method="find{1}">
+			<result type="json">
+				<param name="root">jsonArrayInfo</param>
+			</result>
+		</action>
+		
+		<action name="updateLevel" class="profileAction" method="updateLevel">
+			<result type="json">
+				<param name="root">level</param>
+			</result>
+		</action>
+		
+		<action name="findRankList" class="officeRankAction" method="findRankList">
+			<result type="json">
+				<param name="root">rankInfo</param>
+			</result>
+		</action>
+		
+		<action name="findRankListByName" class="officeRankAction" method="findRankListByName">
+			<result type="json">
+				<param name="root">rankInfo</param>
+			</result>
+		</action>
+		
+		<action name="findRankListById" class="officeRankAction" method="findRankListById">
+			<result type="json">
+				<param name="root">rankInfo</param>
+			</result>
+		</action>
+		
+		<action name="findAllNameList" class="countAction" method="findAllNameList">
+			<result type="json">
+				<param name="root">jsonArrayInfo</param>
+			</result>
+		</action>
+		
+		<action name="findRankCount" class="countAction" method="findRankCount">
+			<result type="json">
+				<param name="root">jsonArrayInfo</param>
+			</result>
+		</action>
+		
+		<action name="getProvinceData" class="countAction" method="getProvinceData">
+			<result type="json">
+				<param name="root">jsonObjectInfo</param>
+			</result>
+		</action>
+		
+		<action name="getCurrentRankData" class="countAction" method="getCurrentRankData">
+			<result type="json">
+				<param name="root">jsonObjectInfo</param>
+			</result>
+		</action>
+		
+		<action name="getProvinceNewProfileData" class="countAction" method="getProvinceNewProfileData">
+			<result type="json">
+				<param name="root">jsonObjectInfo</param>
+			</result>
+		</action>
+	</package>
+	
+	<package name="defaultDB" extends="struts-default">
+		<action name="searchByName" class="profileAction" method="searchByName">
+			<result name="success">profile.jsp</result>
+			<result name="multiple">multiple.jsp</result>
+			<result name="none">empty.html</result>
+		</action>
+		
+		<action name="searchByKeyword" class="profileAction" method="searchByKeyword">
+            <result name="success">search-result.jsp</result>
+            <result name="none">empty.html</result>
+        </action>
+		
+		<action name="searchById" class="profileAction" method="searchById">
+			<result name="success">profile.jsp</result>
+			<result name="none">empty.html</result>
+		</action>
+		
+		<action name="searchByIdNew" class="profileAction" method="searchById">
+			<result name="success">profile-new.jsp</result>
+			<result name="none">empty.html</result>
+		</action>
+		
+		<action name="delete" class="profileAction" method="delete">
+			<result name="success">index.html</result>
+			<result name="error">empty.html</result>
+		</action>
+		
+		<action name="searchByProvince" class="countAction" method="searchByProvince">
+			<result name="success">province.jsp</result>
+			<result name="none">empty.html</result>
+		</action>
+		
+		<action name="searchByProvinceAndTime" class="countAction" method="searchByProvinceAndTime">
+			<result name="success">province.jsp</result>
+			<result name="none">empty.html</result>
+		</action>
+		
+		<action name="fileDisplay" class="fileDisplay">
+			<result name="success" type="stream">
+			  <param name="contentType">image/jpeg</param>
+			  <param name="inputName">stream</param>
+			  <param name="bufferSize">1024</param>
+			</result>
+		</action>
+		
+	</package>
+</struts>    

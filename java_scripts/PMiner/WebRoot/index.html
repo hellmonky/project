@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    <!-- Standard Meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>PMiner | 首页</title>
+
+    <meta name="keywords" content="pminer,index,PMiner,首页">
+    <meta name="description" content="Pminer index page">
+    <meta name="content-type" content="text/html; charset=UTF-8">
+
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="http://cdn.bootcss.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="http://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <style type='text/css'>
+    </style>
+  </head>
+  <body>
+    <div class="container-fluid" >
+      <div class="row" style="color:white;background-color:#4791D2;" id="table">
+        <div class="col-md-2 col-md-offset-1" style="padding:20px;">
+          <shiro:hasRole name="admin">
+          <span class="glyphicon glyphicon-stats">
+            <a href="admin.html" style="color:white;">后台管理</a>
+          </span>
+          </shiro:hasRole>
+        </div>
+
+        <div class="col-md-5" style="padding:20px;">
+          <form action="searchByName.action" role="form" method="post">
+            <div class="input-group">
+              <label class="sr-only" for="exampleInputName">Profile Name</label>
+              <input type="text" class="form-control typeahead"  placeholder="请输入姓名" name="name" id="name">
+              <span class="input-group-btn">
+                <button class="btn btn-primary" type="submit">搜索</button>
+              </span>
+            </div>
+          </form>
+        </div>
+
+        <div class="col-md-4" style="padding:20px;">
+          <h5 id="digitaltime"></h5>
+        </div>
+      </div>
+
+      <div class="row" >
+        <div class="col-md-12">
+          <div class="panel panel-default">
+            <div class="panel-heading"><span class="glyphicon glyphicon-th-list"></span>&nbsp;&nbsp;任免通知</div>
+            <div class="panel-body">
+              <div id="appoint-container" >
+                <ul id="appoint" >
+                  <li class="listPoint"><a href="javascript:" title=""><span class="text_slice" style="width:260px;"></span></a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-8">
+          <div id="map" style="height:500px;padding:0px;border:1px solid #ccc;"></div>
+        </div>
+
+        <div class="col-md-4">
+          <div id="bar" style="height:200px;padding:10px;border:1px solid #ccc;"></div>
+        </div>
+
+        <div class="col-md-4">
+          <div id="pie" style="height:300px;padding:0px;border:1px solid #ccc;"></div>
+        </div>
+      </div>
+
+      <div class="row" >
+        <div class="col-md-8">
+          <div class="panel panel-default">
+            <div class="panel-heading"><span class="glyphicon glyphicon-th-list"></span>&nbsp;&nbsp;新闻动态</div>
+            <div class="panel-body" style="height:150px;">
+              <div class="row">
+                <div class="col-md-8">
+                  <div id="news-container">
+                    <ul id="news">
+                      <li class="listPoint"><a href="javascript:" title=""><span class="text_slice" style="width:260px;"></span></a></li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="col-md-1">
+                  <button type="button" class="btn btn-default" id="nt-prev">
+                    <span class="glyphicon glyphicon-chevron-up"></span>
+                  </button>
+                  <div  style="padding-top:50px">
+                    <button type="button" class="btn btn-default" id="nt-next">
+                      <span class="glyphicon glyphicon-chevron-down"></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="panel panel-default">
+            <div class="panel-heading"><span class="glyphicon glyphicon-tasks"></span>&nbsp;&nbsp;算法进度</div>
+            <div class="panel-body" style="height:150px">
+              <table class="table table-condensed">
+                <tr>
+                  <td style="width:30%">人员关系</td>
+                  <td>
+                    <div class="progress">
+                      <div class="progress-bar progress-bar-success progress-bar-striped" id="pg1" role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                        0%
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="width:30%">职位升迁</td>
+                  <td>
+                    <div class="progress">
+                      <div class="progress-bar progress-bar-info progress-bar-striped" id="pg2" role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                        0%
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="width:30%">综合分析</td>
+                  <td>
+                    <div class="progress">
+                      <div class="progress-bar progress-bar-warning progress-bar-striped" id="pg3" role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                        0%
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/echarts-all.js"></script>
+    <script src="js/jquery.newsTicker.min.js"></script>
+    <script src="js/digitaltime.js"></script>
+    <script src="js/typeahead.bundle.min.js"></script>
+    <script src="js/main.js"></script>
+    <script type="text/javascript">
+      var p1 = 0;
+      function progress1() {
+        p1 += 5;
+        $("#pg1").css("width", p1 + '%');
+        $("#pg1").html(p1 + '%');
+        if (p1 >= 100) {
+          p1 = 0;
+
+        }
+        else
+          setTimeout(progress1, 300);
+      }
+      var p2 = 0;
+      function progress2() {
+        p2 += 5;
+        $("#pg2").css("width", p2 + '%');
+        $("#pg2").html(p2 + '%');
+        if (p2 >= 100) {
+          p2 = 0;
+
+        }
+        else
+          setTimeout(progress2, 400);
+      }
+      var p3 = 0;
+      function progress3() {
+        p3 += 5;
+        $("#pg3").css("width", p3 + '%');
+        $("#pg3").html(p3 + '%');
+        if (p3 >= 100) {
+          p3 = 0;
+
+        }
+        else
+          setTimeout(progress3, 500);
+      }
+      $(document).ready(function() {
+        setTimeout(progress1, 2000);
+        setTimeout(progress2, 2000);
+        setTimeout(progress3, 2000);
+      });
+      
+      //人物地图地点
+      var mapChart = echarts.init(document.getElementById('map'));
+      var mapOption = {
+        title : {
+          text : '人员分布图',
+          subtext : '',
+          x : 'center'
+        },
+        tooltip : {
+          trigger : 'item'
+        },
+        legend : {
+          orient : 'vertical',
+          x : 'left',
+          data : [ '1档', '2档', '3档' ]
+        },
+        /*
+        dataRange : {
+          min : 0,
+          max : 600,
+          //text : [ '高', '低' ], // 文本，默认为数值文本
+          calculable : true,
+          color : [ '#ff3333', 'orange', 'yellow', 'lime']
+        },*/
+      dataRange: {
+      min: 0,
+      max: 600,
+      calculable : true,
+      color: ['orangered','yellow','lightskyblue']
+      },
+        series : [ {
+          name : '1档',
+          type : 'map',
+          mapType : 'china',
+          roam : false,
+          selectedMode : 'multiple',
+          itemStyle : {
+            normal : {
+              label : {
+                show : true
+              }
+            },
+            emphasis : {
+              label : {
+                show : true
+              }
+            }
+          },
+          data : [],
+          geoCoord : {
+            "海门" : [ 121.15, 31.89 ],
+            "鄂尔多斯" : [ 109.781327, 39.608266 ],
+            "招远" : [ 120.38, 37.35 ],
+            "舟山" : [ 122.207216, 29.985295 ],
+            "齐齐哈尔" : [ 123.97, 47.33 ],
+            "盐城" : [ 120.13, 33.38 ],
+            "赤峰" : [ 118.87, 42.28 ],
+            "青岛" : [ 120.33, 36.07 ],
+            "乳山" : [ 121.52, 36.89 ],
+            "金昌" : [ 102.188043, 38.520089 ],
+            "泉州" : [ 118.58, 24.93 ],
+            "莱西" : [ 120.53, 36.86 ],
+            "日照" : [ 119.46, 35.42 ],
+            "胶南" : [ 119.97, 35.88 ],
+            "南通" : [ 121.05, 32.08 ],
+            "拉萨" : [ 91.11, 29.97 ],
+            "西藏" : [ 91.11, 29.97 ],
+            "云浮" : [ 112.02, 22.93 ],
+            "梅州" : [ 116.1, 24.55 ],
+            "文登" : [ 122.05, 37.2 ],
+            "上海" : [ 121.48, 31.22 ],
+            "攀枝花" : [ 101.718637, 26.582347 ],
+            "威海" : [ 122.1, 37.5 ],
+            "承德" : [ 117.93, 40.97 ],
+            "厦门" : [ 118.1, 24.46 ],
+            "汕尾" : [ 115.375279, 22.786211 ],
+            "潮州" : [ 116.63, 23.68 ],
+            "丹东" : [ 124.37, 40.13 ],
+            "太仓" : [ 121.1, 31.45 ],
+            "曲靖" : [ 103.79, 25.51 ],
+            "烟台" : [ 121.39, 37.52 ],
+            "福州" : [ 119.3, 26.08 ],
+            "福建" : [ 119.3, 26.08 ],
+            "瓦房店" : [ 121.979603, 39.627114 ],
+            "即墨" : [ 120.45, 36.38 ],
+            "抚顺" : [ 123.97, 41.97 ],
+            "玉溪" : [ 102.52, 24.35 ],
+            "张家口" : [ 114.87, 40.82 ],
+            "阳泉" : [ 113.57, 37.85 ],
+            "莱州" : [ 119.942327, 37.177017 ],
+            "湖州" : [ 120.1, 30.86 ],
+            "汕头" : [ 116.69, 23.39 ],
+            "昆山" : [ 120.95, 31.39 ],
+            "宁波" : [ 121.56, 29.86 ],
+            "湛江" : [ 110.359377, 21.270708 ],
+            "揭阳" : [ 116.35, 23.55 ],
+            "荣成" : [ 122.41, 37.16 ],
+            "连云港" : [ 119.16, 34.59 ],
+            "葫芦岛" : [ 120.836932, 40.711052 ],
+            "常熟" : [ 120.74, 31.64 ],
+            "东莞" : [ 113.75, 23.04 ],
+            "河源" : [ 114.68, 23.73 ],
+            "淮安" : [ 119.15, 33.5 ],
+            "泰州" : [ 119.9, 32.49 ],
+            "南宁" : [ 108.33, 22.84 ],
+            "广西" : [ 108.33, 22.84 ],
+            "营口" : [ 122.18, 40.65 ],
+            "惠州" : [ 114.4, 23.09 ],
+            "江阴" : [ 120.26, 31.91 ],
+            "蓬莱" : [ 120.75, 37.8 ],
+            "韶关" : [ 113.62, 24.84 ],
+            "嘉峪关" : [ 98.289152, 39.77313 ],
+            "广州" : [ 113.23, 23.16 ],
+            "广东" : [ 113.23, 23.16 ],
+            "延安" : [ 109.47, 36.6 ],
+            "太原" : [ 112.53, 37.87 ],
+            "山西" : [ 112.53, 37.87 ],
+            "清远" : [ 113.01, 23.7 ],
+            "中山" : [ 113.38, 22.52 ],
+            "昆明" : [ 102.73, 25.04 ],
+            "云南" : [ 102.73, 25.04 ],
+            "寿光" : [ 118.73, 36.86 ],
+            "盘锦" : [ 122.070714, 41.119997 ],
+            "长治" : [ 113.08, 36.18 ],
+            "深圳" : [ 114.07, 22.62 ],
+            "珠海" : [ 113.52, 22.3 ],
+            "宿迁" : [ 118.3, 33.96 ],
+            "咸阳" : [ 108.72, 34.36 ],
+            "铜川" : [ 109.11, 35.09 ],
+            "平度" : [ 119.97, 36.77 ],
+            "佛山" : [ 113.11, 23.05 ],
+            "海口" : [ 110.35, 20.02 ],
+            "海南" : [ 110.35, 20.02 ],
+            "江门" : [ 113.06, 22.61 ],
+            "章丘" : [ 117.53, 36.72 ],
+            "肇庆" : [ 112.44, 23.05 ],
+            "大连" : [ 121.62, 38.92 ],
+            "临汾" : [ 111.5, 36.08 ],
+            "吴江" : [ 120.63, 31.16 ],
+            "石嘴山" : [ 106.39, 39.04 ],
+            "沈阳" : [ 123.38, 41.8 ],
+            "辽宁" : [ 123.38, 41.8 ],
+            "苏州" : [ 120.62, 31.32 ],
+            "茂名" : [ 110.88, 21.68 ],
+            "嘉兴" : [ 120.76, 30.77 ],
+            "长春" : [ 125.35, 43.88 ],
+            "吉林" : [ 125.35, 43.88 ],
+            "胶州" : [ 120.03336, 36.264622 ],
+            "银川" : [ 106.27, 38.47 ],
+            "宁夏" : [ 106.27, 38.47 ],
+            "张家港" : [ 120.555821, 31.875428 ],
+            "三门峡" : [ 111.19, 34.76 ],
+            "锦州" : [ 121.15, 41.13 ],
+            "南昌" : [ 115.89, 28.68 ],
+            "江西" : [ 115.89, 28.68 ],
+            "柳州" : [ 109.4, 24.33 ],
+            "三亚" : [ 109.511909, 18.252847 ],
+            "自贡" : [ 104.778442, 29.33903 ],
+            "吉林" : [ 126.57, 43.87 ],
+            "阳江" : [ 111.95, 21.85 ],
+            "泸州" : [ 105.39, 28.91 ],
+            "西宁" : [ 101.74, 36.56 ],
+            "青海" : [ 101.74, 36.56 ],
+            "宜宾" : [ 104.56, 29.77 ],
+            "呼和浩特" : [ 111.65, 40.82 ],
+            "内蒙古" : [ 111.65, 40.82 ],
+            "成都" : [ 104.06, 30.67 ],
+            "四川" : [ 104.06, 30.67 ],
+            "大同" : [ 113.3, 40.12 ],
+            "镇江" : [ 119.44, 32.2 ],
+            "桂林" : [ 110.28, 25.29 ],
+            "张家界" : [ 110.479191, 29.117096 ],
+            "宜兴" : [ 119.82, 31.36 ],
+            "北海" : [ 109.12, 21.49 ],
+            "西安" : [ 108.95, 34.27 ],
+            "陕西" : [ 108.95, 34.27 ],
+            "金坛" : [ 119.56, 31.74 ],
+            "东营" : [ 118.49, 37.46 ],
+            "牡丹江" : [ 129.58, 44.6 ],
+            "遵义" : [ 106.9, 27.7 ],
+            "绍兴" : [ 120.58, 30.01 ],
+            "扬州" : [ 119.42, 32.39 ],
+            "常州" : [ 119.95, 31.79 ],
+            "潍坊" : [ 119.1, 36.62 ],
+            "重庆" : [ 106.54, 29.59 ],
+            "台州" : [ 121.420757, 28.656386 ],
+            "南京" : [ 118.78, 32.04 ],
+            "江苏" : [ 118.78, 32.04 ],
+            "滨州" : [ 118.03, 37.36 ],
+            "贵阳" : [ 106.71, 26.57 ],
+            "贵州" : [ 106.71, 26.57 ],
+            "无锡" : [ 120.29, 31.59 ],
+            "本溪" : [ 123.73, 41.3 ],
+            "克拉玛依" : [ 84.77, 45.59 ],
+            "渭南" : [ 109.5, 34.52 ],
+            "马鞍山" : [ 118.48, 31.56 ],
+            "宝鸡" : [ 107.15, 34.38 ],
+            "焦作" : [ 113.21, 35.24 ],
+            "句容" : [ 119.16, 31.95 ],
+            "北京" : [ 116.46, 39.92 ],
+            "徐州" : [ 117.2, 34.26 ],
+            "衡水" : [ 115.72, 37.72 ],
+            "包头" : [ 110, 40.58 ],
+            "绵阳" : [ 104.73, 31.48 ],
+            "乌鲁木齐" : [ 87.68, 43.77 ],
+            "新疆" : [ 87.68, 43.77 ],
+            "枣庄" : [ 117.57, 34.86 ],
+            "杭州" : [ 120.19, 30.26 ],
+            "浙江" : [ 120.19, 30.26 ],
+            "淄博" : [ 118.05, 36.78 ],
+            "鞍山" : [ 122.85, 41.12 ],
+            "溧阳" : [ 119.48, 31.43 ],
+            "库尔勒" : [ 86.06, 41.68 ],
+            "安阳" : [ 114.35, 36.1 ],
+            "开封" : [ 114.35, 34.79 ],
+            "济南" : [ 117, 36.65 ],
+            "山东" : [ 117, 36.65 ],
+            "德阳" : [ 104.37, 31.13 ],
+            "温州" : [ 120.65, 28.01 ],
+            "九江" : [ 115.97, 29.71 ],
+            "邯郸" : [ 114.47, 36.6 ],
+            "临安" : [ 119.72, 30.23 ],
+            "兰州" : [ 103.73, 36.03 ],
+            "甘肃" : [ 103.73, 36.03 ],
+            "沧州" : [ 116.83, 38.33 ],
+            "临沂" : [ 118.35, 35.05 ],
+            "南充" : [ 106.110698, 30.837793 ],
+            "天津" : [ 117.2, 39.13 ],
+            "富阳" : [ 119.95, 30.07 ],
+            "泰安" : [ 117.13, 36.18 ],
+            "诸暨" : [ 120.23, 29.71 ],
+            "郑州" : [ 113.65, 34.76 ],
+            "河南" : [ 113.65, 34.76 ],
+            "哈尔滨" : [ 126.63, 45.75 ],
+            "黑龙江" : [ 126.63, 45.75 ],
+            "聊城" : [ 115.97, 36.45 ],
+            "芜湖" : [ 118.38, 31.33 ],
+            "唐山" : [ 118.02, 39.63 ],
+            "平顶山" : [ 113.29, 33.75 ],
+            "邢台" : [ 114.48, 37.05 ],
+            "德州" : [ 116.29, 37.45 ],
+            "济宁" : [ 116.59, 35.38 ],
+            "荆州" : [ 112.239741, 30.335165 ],
+            "宜昌" : [ 111.3, 30.7 ],
+            "义乌" : [ 120.06, 29.32 ],
+            "丽水" : [ 119.92, 28.45 ],
+            "洛阳" : [ 112.44, 34.7 ],
+            "秦皇岛" : [ 119.57, 39.95 ],
+            "株洲" : [ 113.16, 27.83 ],
+            "石家庄" : [ 114.48, 38.03 ],
+            "河北" : [ 114.48, 38.03 ],
+            "莱芜" : [ 117.67, 36.19 ],
+            "常德" : [ 111.69, 29.05 ],
+            "保定" : [ 115.48, 38.85 ],
+            "湘潭" : [ 112.91, 27.87 ],
+            "金华" : [ 119.64, 29.12 ],
+            "岳阳" : [ 113.09, 29.37 ],
+            "长沙" : [ 113, 28.21 ],
+            "湖南" : [ 113, 28.21 ],
+            "衢州" : [ 118.88, 28.97 ],
+            "廊坊" : [ 116.7, 39.53 ],
+            "菏泽" : [ 115.480656, 35.23375 ],
+            "合肥" : [ 117.27, 31.86 ],
+            "安徽" : [ 117.27, 31.86 ],
+            "武汉" : [ 114.31, 30.52 ],
+            "湖北" : [ 114.31, 30.52 ],
+            "大庆" : [ 125.03, 46.58 ]
+          }
+        }, {
+          name : '2档',
+          type : 'map',
+          mapType : 'china',
+          selectedMode : 'multiple',
+          itemStyle : {
+            normal : {
+              label : {
+                show : true
+              }
+            },
+            emphasis : {
+              label : {
+                show : true
+              }
+            }
+          },
+          data : []
+        }, {
+          name : '3档',
+          type : 'map',
+          mapType : 'china',
+          selectedMode : 'multiple',
+          itemStyle : {
+            normal : {
+              label : {
+                show : true
+              }
+            },
+            emphasis : {
+              label : {
+                show : true
+              }
+            }
+          },
+          data : []
+        }, {
+          name : '新增简历', // 该series用于动态显示新增加的人物履历数据，用markPoint在地图上标示
+          type : 'map',
+          mapType : 'china',
+          data : [],
+          markPoint : {
+            clickable: 'true',
+            itemStyle : {
+              normal : {
+                label : {
+                  show : false
+                }
+              }
+            },
+            symbol : 'emptyCircle',
+            symbolSize : function(v) {
+              return 8; // + v/30;
+            },
+    effect : {
+    show: true,
+    shadowBlur : 0
+    },
+            data : []
+          }
+        }, {//series[4] 用于显示任免信息的更新情况
+          name : '',
+          type : 'map',
+          mapType : 'china',
+          data : [],
+          markPoint : {
+            effect : {
+              show : true,
+              shadowBlur : 0
+            },
+            itemStyle : {
+              normal : {
+                label : {
+                  show : false
+                }
+              }
+            },
+            symbol : 'emptyCircle',
+            symbolSize : 10,
+            data : []
+          }
+        } ]
+      };
+      
+      // 获取各档人员的数量，相加即为人员的总数量
+      function getTotalNum() {
+        $.ajax({ //采用jQuery Ajax方法
+          type : "post",
+          dataType : "json", //返回数据类型是JSON数据格式
+          data : {
+          },
+          url : "findRankCount.action",
+          success : function(data) {
+            mapOption.title.text = '当前总数量'
+                + (parseInt(data[0]) + parseInt(data[1]) + parseInt(data[2]));
+          }
+        });
+      }
+      getTotalNum();
+      
+      function updateMap() {
+        $.ajax({ //采用jQuery Ajax方法
+          type : "post",
+          dataType : "json", //返回数据类型是JSON数据格式
+          data : {
+            name : ""
+          }, //传递给Action的参数是param
+          url : "getProvinceData.action", //处理的Action名称
+          success : function(data) { //成功的处理函数
+            var provinceLevel1 = [];
+            var provinceLevel2 = [];
+            var provinceLevel3 = [];
+            for ( var province in data) {
+              var levelNums = data[province];
+              for ( var i in levelNums) {
+                if (levelNums[i] != 0) {
+                  if (i == "levelOneNum") {
+                    var object = {};
+                    object.name = province;
+                    object.value = levelNums[i];
+                    provinceLevel1.push(object);
+                  } else if (i == "levelTwoNum") {
+                    var object = {};
+                    object.name = province;
+                    object.value = levelNums[i];
+                    provinceLevel2.push(object);
+                  } else if (i == "levelThreeNum") {
+                    var object = {};
+                    object.name = province;
+                    object.value = levelNums[i];
+                    provinceLevel3.push(object);
+                  }
+                }
+              }
+            }
+            
+            mapOption.series[0].data = provinceLevel1;
+            mapOption.series[1].data = provinceLevel2;
+            mapOption.series[2].data = provinceLevel3;
+            mapChart.setOption(mapOption, true);
+          }
+        });
+      }
+      updateMap();
+      /*
+      mapChart.on(echarts.config.EVENT.MAP_SELECTED, function(param) {
+        var selected = param.target;
+        //window.location.href = "./searchByProvince.action?province=" + encodeURIComponent(selected);
+      });
+      */
+      // 地图点击事件，要区分普通点击和标记点击
+      mapChart.on(echarts.config.EVENT.CLICK, function(param) {
+        var provinceClicked = param.name;
+        if (param.seriesName == "新增简历") // 跳转到新增人物简历界面
+          window.location.href="./searchByProvinceAndTime.action?province=" + encodeURIComponent(provinceClicked);
+        else // 跳转到普通的省列表显示页面
+          window.location.href = "./searchByProvince.action?province=" + encodeURIComponent(provinceClicked);
+      });
+      
+      var barChart = echarts.init(document.getElementById('bar'));
+      var barOption = {
+        title : {
+          text : '当前总数量：' + '',
+          subtext : '来自PMiner'
+        },
+        tooltip : {
+          trigger : 'axis'
+        },
+        legend : {
+          data : []
+        },
+        calculable : true,
+        xAxis : [ {
+          type : 'value',
+          boundaryGap : [ 0, 0.01 ],
+          axisTick:{interval:'auto'}
+        } ],
+        yAxis : [ {
+          type : 'category',
+          data : [ '1档', '2档', '3档' ]
+        } ],
+        series : [ {
+          name : '人数',
+          type : 'bar',
+          data : []
+        } ]
+      };
+      function updateBar() {
+        $.ajax({ //采用jQuery Ajax方法
+          type : "post",
+          dataType : "json", //返回数据类型是JSON数据格式
+          data : {
+          },
+          url : "findRankCount.action",
+          success : function(data) { //成功的处理函数
+            barOption.series[0].data = data;
+            barOption.title.text = '当前总数量'
+                + (parseInt(data[0]) + parseInt(data[1]) + parseInt(data[2]));
+            barChart.setOption(barOption, true);
+          }
+        });
+      }
+      updateBar();
+      
+      var pieChart = echarts.init(document.getElementById('pie'));
+      var pieOption = {
+        title : {
+          text : '职级统计',
+          subtext : '',
+          x : 'left'
+        },
+        tooltip : {
+          trigger : 'item',
+          formatter : "{b} : {c} ({d}%)"
+        },
+        /*
+        legend : {
+          orient : 'vertical',
+          x : 'left',
+          data : [ '正国级', '副国级', '正部级', '副部级', '正厅级', '副厅级' ]
+        },
+        */
+        calculable : true,
+        series : [ {
+          name : '',
+          type : 'pie',
+          radius : '55%',
+          center : [ '50%', '60%' ],
+          data : []
+        } ]
+      };
+      function updatePie() {
+        $.ajax({ //采用jQuery Ajax方法
+          type : "post",
+          dataType : "json", //返回数据类型是JSON数据格式
+          data : {
+            name : ""
+          }, //传递给Action的参数是param
+          url : "getCurrentRankData.action", //处理的Action名称
+          success : function(data) { //成功的处理函数
+            //console.log(data);
+            var rankNum = [];
+            for ( var num in data) {
+              var object = {};
+              object.value = data[num];
+              switch (num) {
+              case "10":
+                object.name = "正国级";
+                break;
+              case "9":
+                object.name = "副国级";
+                break;
+              case "8":
+                object.name = "正部级";
+                break;
+              case "7":
+                object.name = "副部级";
+                break;
+              case "6":
+                object.name = "正厅级";
+                break;
+              case "5":
+                object.name = "副厅级";
+                break;
+              default:
+                break;
+              }
+              rankNum.push(object);
+            }
+            pieOption.series[0].data = rankNum;
+            pieChart.clear();
+            pieChart.setOption(pieOption, true);
+          }
+        });
+      }
+      updatePie();
+      
+      // 这里用于更新信息
+      function getNewProfileData() {
+        $.ajax({ //采用jQuery Ajax方法
+          type : "post",
+          dataType : "json", //返回数据类型是JSON数据格式
+          data : {
+            name : ""
+          }, //传递给Action的参数是param
+          url : "getProvinceNewProfileData.action", //处理的Action名称
+          success : function(data) { //成功的处理函数
+            var object = [];
+            for ( var province in data) {
+              var item = {};
+              item.name = province;
+              item.value = data[province];
+              object.push(item);
+            }
+            
+            mapChart.clear();
+            mapOption.series[3].markPoint.data = object;
+            mapChart.setOption(mapOption, true);
+          }
+        });
+      }
+      getNewProfileData();
+      function readNews() {
+        $.ajax({
+          url : "readNewsTxt.action", //后台处理程序
+          type : "post",
+          dataType : "json",
+          success : function(data) {
+            $("#news").html('');
+            for (var i = 0; i < data.length; i++) {
+              if (data[i].contentHref.indexOf("http://www.ccdi.gov.cn/ajcc/") >= 0) {
+                $("#news").append("<li class=\"listPoint\"><a href=\"" + data[i].contentHref + "\" target=\"_blank\"><span class=\"text_slice\" style=\"width:260px;color:red;\">"
+                    + data[i].title + "----" + data[i].date + " </span></a></li>");
+              } else {
+                $("#news").append("<li class=\"listPoint\"><a href=\"" + data[i].contentHref + "\" target=\"_blank\"><span class=\"text_slice\" style=\"width:260px;\">"
+                      + data[i].title + "----" + data[i].date + " </span></a></li>");
+              }
+            }
+            $('#news').newsTicker({
+            max_rows: 6,
+            duration: 2500,
+            speed: 300,
+            prevButton: $('#nt-prev'),
+            nextButton: $('#nt-next')
+            });
+          }
+        });
+      }
+      readNews();
+      
+      function readNews2() {
+        $.ajax({
+          url : "readAppointTxt.action", //后台处理程序
+          type : "post",
+          dataType : "json",
+          success : function(data) {
+            $("#appoint").html('');
+            for (var i = 0; i < data.length; i++) {
+              $("#appoint").append("<li class=\"listPoint\"><a href=\"" + data[i].contentHref + "\" target=\"_blank\"><span class=\"text_slice\" style=\"width:260px;\">"
+                  + data[i].title + "----" + data[i].date + " </span></a></li>");
+            }
+            $('#appoint').newsTicker({
+            max_rows: 1,
+            duration: 3000
+            });
+          }
+        });
+      }
+      readNews2();
+      
+      function readAppointDir() {
+        $.ajax({ //采用jQuery Ajax方法
+          type : "post",
+          dataType : "json", //返回数据类型是JSON数据格式
+          url : "readAppointDir.action", //处理的Action名称
+        });
+      }
+      readAppointDir();
+      
+      function getAppointProvinceList() {
+        $.ajax({ //采用jQuery Ajax方法
+          type : "post",
+          dataType : "json", //返回数据类型是JSON数据格式
+          url : "getAppointProvinceList.action", //处理的Action名称
+          success : function(data) { //成功的处理函数
+            var object = [];
+            for (var i in data) {
+              var item = {};
+              //data[i]形如"广东省"，需处理为"广东"的形式
+              var index = data[i].indexOf("省");
+              if (index == -1)
+                index = data[i].indexOf("市");
+              if (index == -1)
+                index = data[i].length;
+              
+              item.name = data[i].substring(0, index);
+              item.value = 20;
+              object.push(item);
+            }
+            
+            mapChart.clear();
+            mapOption.series[4].markPoint.effect.color = '#CC33CC';
+            mapOption.series[4].markPoint.data = object;
+            mapChart.setOption(mapOption, true);
+          }
+        });
+      }
+      getAppointProvinceList();
+      function updateChartByTime() {
+        getNewProfileData();
+        setTimeout(updateBar, 500);
+        setTimeout(updatePie, 500);
+        getTotalNum();
+        setTimeout(updateMap,500);
+        getAppointProvinceList();
+      }
+      // 定时对首页中的图表进行更新，可能会消耗浏览器性能
+      setInterval(updateChartByTime, 30000);
+      // 新闻信息等默认为每1小时刷新
+      //setInterval(readNews(), 3600000);
+      //setInterval(readNews2(), 3600000);
+      setInterval(readAppointDir(), 3600000);
+    </script>
+  </body>
+</html>

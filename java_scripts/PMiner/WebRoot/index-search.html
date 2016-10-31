@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    <!-- Standard Meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    <title>PMiner | 搜索</title>
+    <meta name="keywords" content="pminer,search,profile">
+    <meta name="description" content="Pminer search page">
+    <meta name="content-type" content="text/html; charset=UTF-8">
+
+    <link rel="stylesheet" type="text/css" href="css/semantic.min.css">
+    <link rel="stylesheet" type="text/css" href="css/docs.css">
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/echarts.js"></script>
+
+    <style type='text/css'>
+    .full.height {
+      position: relative;
+      height: auto;
+      min-height: 100%
+    }
+    #footer {
+      position: absolute;
+      bottom: 0;
+      height: 70px;
+      width: 100%;
+    }
+    </style>
+  </head>
+
+  <body ontouchstart>
+    <div id="menu" class="ui fixed blue large inverted menu">
+      <div class="container">
+        <a class="header item" href="#">PMiner</a>
+        <a class="active item" href="index.html">
+          <i class="home icon"></i> 首页
+        </a>
+        <div class="right menu">
+          <div class="right item">
+            <a class="ui black button" href="logout.action">注销</a>
+          </div>
+          <div class="item" style="height:41px;padding-top:1px;">
+            <form action="searchByKeyword.action" method="post">
+              <div class="ui action input">
+                <input placeholder="综合搜索" type="text" id="searchName" name="name">
+                <button class="ui green button" id="searchButton">搜索</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="full height">
+      <div class="main container" style="padding-top: 70px; padding-bottom: 70px" id="mainContent">
+        <h1 class="ui center aligned icon header">
+          <i class="circular inverted blue users icon"></i>
+          PMiner
+        </h1>
+
+        <div class="ui two column centered grid">
+          <div class="column">
+            <form action="searchByKeyword.action" method="post">
+            <div class="ui fluid action input">
+                <input type="text" placeholder="Search Now..." name="name">
+                <button class="ui teal icon button">
+                  <i class="search icon"></i>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="ui divider" style="margin-top: 70px"></div>
+
+          <div class="three column row">
+            <div class="column">
+              <div class="ui blue segment">
+                <div class="ui top left attached label">
+                  当前统计信息
+                </div>
+                <div class="ui horizontal statistics">
+                  <div class="statistic">
+                    <div class="value">
+                      8,534
+                    </div>
+                    <div class="label">
+                      1档简历数量
+                    </div>
+                  </div>
+                  <div class="statistic">
+                    <div class="value">
+                      3,256
+                    </div>
+                    <div class="label">
+                      2档简历数量
+                    </div>
+                  </div>
+                  <div class="statistic">
+                    <div class="value">
+                      2,278
+                    </div>
+                    <div class="label">
+                      3档简历数量
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="column">
+              <div class="ui blue segment">
+                <div id="pie" style="height:300px;padding:0px;border:1px solid #ccc;"></div>
+              </div>
+            </div>
+            <div class="column">
+              <div class="ui blue segment">
+                <p>各省份数量统计</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="ui divider" style="margin-top: 20px"></div>
+        </div>
+      </div>
+
+      <div id="footer" class="ui inverted blue vertical segment" style="padding-top: 2em; padding-bottom:4em">
+        <div class="container">
+          <div class="ui stackable inverted divided relaxed grid">
+            <div class="six wide column">
+              <h4 class="ui inverted header">
+                2014-2015 PMiner. <i class="copyright icon"></i> ALL Rights Reserved.
+              </h4>
+            </div>
+            <div class="four wide column">
+              <h4>关于PMiner</h4>
+            </div>
+            <div class="four wide column">
+              <h4>开发成员</h4>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script>
+    require.config({
+      paths: {
+        echarts: './js'
+      }
+    });
+      require(
+        [
+          'echarts',
+          'echarts/chart/pie'
+        ],
+        function (ec) {
+          var pieChart = ec.init(document.getElementById('pie'));
+          var pieOption = {
+            title : {
+              text : '职级统计',
+              subtext : '',
+              x : 'left'
+            },
+            tooltip : {
+              trigger : 'item',
+              formatter : "{b} : {c} ({d}%)"
+            },
+            /*
+            legend : {
+              orient : 'vertical',
+              x : 'left',
+              data : [ '正国级', '副国级', '正部级', '副部级', '正厅级', '副厅级' ]
+            },
+            */
+            calculable : true,
+            series : [ {
+              name : '',
+              type : 'pie',
+              radius : '55%',
+              center : [ '50%', '60%' ],
+              data : []
+            } ]
+          };
+
+          function updatePie() {
+            $.ajax({ //采用jQuery Ajax方法
+              type : "post",
+              dataType : "json", //返回数据类型是JSON数据格式
+              data : {
+                name : ""
+              }, //传递给Action的参数是param
+              url : "getCurrentRankData.action", //处理的Action名称
+              success : function(data) { //成功的处理函数
+                //console.log(data);
+                var rankNum = [];
+
+                for ( var num in data) {
+                  var object = {};
+                  object.value = data[num];
+                  switch (num) {
+                  case "10":
+                    object.name = "正国级";
+                    break;
+                  case "9":
+                    object.name = "副国级";
+                    break;
+                  case "8":
+                    object.name = "正部级";
+                    break;
+                  case "7":
+                    object.name = "副部级";
+                    break;
+                  case "6":
+                    object.name = "正厅级";
+                    break;
+                  case "5":
+                    object.name = "副厅级";
+                    break;
+                  default:
+                    break;
+                  }
+
+                  rankNum.push(object);
+                }
+
+                pieOption.series[0].data = rankNum;
+                pieChart.clear();
+                pieChart.setOption(pieOption, true);
+              }
+            });
+          };
+          updatePie();
+        }
+      );
+      /*
+      $("#searchButton").click(function() {
+        $("#mainContent").load("searchByKeyword.action", {"name": $("searchName").val()});
+      })
+      */ // test failed
+    </script>
+  </body>
+</html>

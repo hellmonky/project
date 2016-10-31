@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    <!-- Standard Meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>人物信息对比</title>
+    <meta name="keywords" content="pminer,compare,profile,对比,人物">
+    <meta name="description" content="Pminer compare">
+    <meta name="content-type" content="text/html; charset=UTF-8">
+
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/main.css" rel="stylesheet">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="http://cdn.bootcss.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+    <script src="http://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <style type='text/css'>
+      .carpkbtn{display:block;width:200px;height:120px;text-indent:-9999px;background:url(images/compare.gif) no-repeat scroll -90px -126px transparent}
+    </style>
+  </head>
+
+  <body style="background-color:#F0F0F0">
+    <div class="container-fluid">
+      <div class="row" style="color:white;background-color:#4791D2;" id="table">
+        <div class="col-md-2 col-md-offset-1" style="padding:30px;">
+          <span class="glyphicon glyphicon-home">
+            <a href="index.html" style="color:white;">回到首页</a>
+          </span>
+        </div>
+
+        <div class="col-md-5" style="padding:20px;">
+          <form action="searchByName.action" role="form" method="post">
+            <div class="input-group">
+              <label class="sr-only" for="exampleInputName">Profile Name</label>
+              <input type="text" class="form-control typeahead"  placeholder="请输入姓名" name="name" id="name">
+              <span class="input-group-btn">
+                <button class="btn btn-primary" type="submit">搜索</button>
+              </span>
+            </div>
+          </form>
+        </div>
+
+        <div class="col-md-4" style="padding:20px;">
+          <h5 id="digitaltime"></h5>
+        </div>
+      </div>
+
+      <br>
+
+      <div class="row">
+        <div class="col-md-4 col-md-offset-1">
+          <div class="input-group">
+            <label class="sr-only" for="exampleInputName">Profile Name</label>
+            <input type="text" class="form-control typeahead"  placeholder="请输入姓名" id="inputName1">
+            <span class="input-group-btn">
+              <button onclick="findProfile1()" class="btn btn-primary">搜索</button>
+            </span>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+        </div>
+
+        <div class="col-md-4">
+          <div class="input-group">
+            <label class="sr-only" for="exampleInputName">Profile Name</label>
+            <input type="text" class="form-control typeahead"  placeholder="请输入姓名" id="inputName2">
+            <span class="input-group-btn">
+              <button onclick="findProfile2()" class="btn btn-primary">搜索</button>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-2 col-md-offset-2">
+          <a href="#" class="thumbnail">
+            <img src="images/empty.png" id="img1" class="img-responsive" style="height:200px" alt="Responsive image">
+          </a>
+        </div>
+
+        <div class="col-md-1"></div>
+
+        <div class="col-md-2">
+          <br>
+          <h2 class="carpkbtn">开始对比</h2>
+        </div>
+
+        <div class="col-md-1"></div>
+        <div class="col-md-2">
+          <a href="#" class="thumbnail">
+            <img src="images/empty.png" id="img2" class="img-responsive" style="height:200px" alt="Responsive image">
+          </a>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-2 col-md-offset-2">
+          <h5 id="name1">姓名：</h5>
+          <h5 id="birth_date1">出生日期：</h5>
+        </div>
+        <div class="col-md-1"></div>
+        <div class="col-md-2"></div>
+        <div class="col-md-1"></div>
+        <div class="col-md-2">
+          <h5 id="name2">姓名：</h5>
+          <h5 id="birth_date2">出生日期：</h5>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+          <div id="office" style="height:300px;border:1px solid #ccc;padding:10px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/echarts-all.js"></script>
+    <script src="js/digitaltime.js"></script>
+    <script src="js/typeahead.bundle.min.js"></script>
+    <script src="js/input-autocomplete.js"></script>
+    <script type="text/javascript">
+    //从url参数中提取对比人物1的姓名
+    var name = window.location.search.substr(6);//?name=...
+    name = decodeURIComponent(name);
+    $("#name1").html("姓名：" + name);
+    //人物职务升迁图
+    //图表显示时以左边人物的信息为基准，主要是x轴时间设置的开始和结束时间
+    //都以左边人物为主
+    //根据人物1的姓名进行查找
+    var xAxisStart = null; //形如"1958"
+    var xAxisEnd = null;   //形如"2014"
+    var contentList1 = []; // 用于在tooltip中显示具体的工作信息
+    var timeList1 = []; // 用于在tooltip中显示这段工作经历的起始时间
+    var contentList2 = [];
+    var timeList2 = [];
+    var startYear2 = "";
+    var officeChart = echarts.init(document.getElementById('office'));
+    var officeChartOption = {
+      title : {
+        text : '职位路线图',
+        subtext : '1：副科  2：正科  3：副处  4：正处  5：副局  6：正局  7：副部  8：正部  9：副国  10：正国',
+        sublink : '',
+        x : 'center'
+      },
+      tooltip : {
+        trigger : 'item',
+        axisPointer : { // 坐标轴指示器，坐标轴触发有效
+          type : 'shadow' // 默认为直线，可选为：'line' | 'shadow'
+        },
+        formatter: function (params,ticket,callback) {
+          console.log(params)
+          var contentList = [];
+          var timeList = [];
+          var startYear = xAxisStart;
+          if (params[0] == name) {
+            contentList = contentList1;
+            timeList = timeList1;
+          } else {
+            contentList = contentList2;
+            timeList = timeList2;
+            startYear = startYear2;
+          }
+    var year = params[1].substring(0, 4);
+    var index = parseInt(year) - parseInt(startYear);
+    var content = contentList[index];
+    content = content.replace(/@/g, "<br/>")
+    return content + timeList[index] + '<br/>级别：' + params[2];
+    }
+      },
+    legend: {
+      x : 'left',
+    data:["人物1","人物2"]
+    },
+      xAxis : [ {
+        type : 'category',
+        //splitLine: {show:false},
+        data : []
+      } ],
+      yAxis : [ {
+        type : 'value',
+        splitNumber : 10,
+        axisLabel : {
+          interval : 0,
+        }
+      } ],
+      series : [ {
+        name : '职级1',
+        type : 'line',
+        symbolSize : 2,
+        showAllSymbol : true,
+        itemStyle : {
+          normal : {
+            label : {
+              show : false,
+              position : 'top'
+            }
+          },
+          emphasis: {
+        label: {
+        show: false,
+        position: 'top'
+        }
+        }
+        },
+        data : []
+      },{
+        name : '职级2',
+        type : 'line',
+        symbolSize : 2,
+        showAllSymbol : true,
+        itemStyle : {
+          normal : {
+            label : {
+              show : false,
+              position : 'top'
+            }
+          },
+          emphasis: {
+        label: {
+        show: false,
+        position: 'top'
+        }
+        }
+        },
+        data : []
+      } ]
+    };
+    $.ajax({ //采用jQuery Ajax方法
+      type : "post",
+      dataType : "json", //返回数据类型是JSON数据格式
+      data : {
+        name : name
+      }, //传递给Action的参数是param
+      url : "findRankListByName.action", //处理的Action名称
+      success : function(data) { //成功的处理函数
+        document.getElementById("img1").src = "fileDisplay.action?id=" + data["id"];
+        
+        $("#birth_date1").html("出生日期：" + data["birthDate"]);
+        
+        xAxisStart = data["startYear"];
+        xAxisEnd = data["endYear"];
+        
+        officeChartOption.xAxis[0].data = function() {
+          var list = [];
+          var startYear = data["startYear"];
+          var endYear = data["endYear"];
+          for (var i = startYear; i <= endYear; i++) {
+            list.push(i + '年');
+          }
+          return list;
+        }();
+        officeChartOption.legend.data[0] = name;
+        officeChartOption.series[0].name = name;
+        officeChartOption.series[0].data = data["rankList"];
+        officeChart.setOption(officeChartOption, true);
+        
+        contentList1 = data["contentList"];
+        timeList1 = data["timeList"];
+        name1 = name;
+      }
+    });
+    //当在右半部分点击搜索人物时触发
+    function findProfile2() {
+      var name2 = $("#inputName2")[0].value;
+      $.ajax({ //采用jQuery Ajax方法
+        type : "post",
+        dataType : "json", //返回数据类型是JSON数据格式
+        data : {
+          name : name2
+        }, //传递给Action的参数是param
+        url : "findRankListByName.action", //处理的Action名称
+        success : function(data) { //成功的处理函数
+          document.getElementById("img2").src = "fileDisplay.action?id=" + data["id"];
+          
+          $("#name2").html("姓名：" + data["name"]);
+          $("#birth_date2").html("出生日期：" + data["birthDate"]);
+          
+          var resultList = [];
+          if (data["startYear"] > xAxisStart) {
+            for (var i = xAxisStart; i < data["startYear"]; i++) {
+              resultList.push("-");
+            }
+            resultList = resultList.concat(data["rankList"]);
+          } else {
+            var index = xAxisStart - data["startYear"];
+            resultList = data["rankList"].slice(index);
+          }
+          
+          officeChartOption.legend.data[1] = name2;
+          officeChartOption.series[1].name = name2;
+          officeChartOption.series[1].data = resultList;
+          officeChart.setOption(officeChartOption, true);
+          
+          contentList2 = data["contentList"];
+          timeList2 = data["timeList"];
+          startYear2 = data["startYear"];
+        }
+      });
+    };
+    //当在左半部分点击搜索人物时触发
+    //由于左边点击x轴基准重新设置，需要重新绘制右边的数据以校准
+    function findProfile1() {
+      var name1 = $("#inputName1")[0].value;
+      $.ajax({ //采用jQuery Ajax方法
+        type : "post",
+        dataType : "json", //返回数据类型是JSON数据格式
+        data : {
+          name : name1
+        }, //传递给Action的参数是param
+        url : "findRankListByName.action", //处理的Action名称
+        success : function(data) { //成功的处理函数
+          document.getElementById("img1").src = "fileDisplay.action?id=" + data["id"];
+          
+          $("#name1").html("姓名：" + data["name"]);
+          $("#birth_date1").html("出生日期：" + data["birthDate"]);
+          
+          xAxisStart = data["startYear"];
+          xAxisEnd = data["endYear"];
+          
+          officeChartOption.xAxis[0].data = function() {
+            var list = [];
+            var startYear = data["startYear"];
+            var endYear = data["endYear"];
+            for (var i = startYear; i <= endYear; i++) {
+              list.push(i + '年');
+            }
+            return list;
+          }();
+          officeChartOption.legend.data[0] = name1;
+          officeChartOption.series[0].name = name1;
+          officeChartOption.series[0].data = data["rankList"];
+          officeChart.setOption(officeChartOption, true);
+          
+          contentList1 = data["contentList"];
+          timeList1 = data["timeList"];
+          
+          findProfile2();
+        }
+      });
+    };
+    </script>
+  </body>
+</html>
