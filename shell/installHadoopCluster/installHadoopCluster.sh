@@ -421,7 +421,7 @@ function ntp_master_deploy(){
 
     # 然后判断是否包含
     isContain=(substr ${currentHostRole} "ntp_master")
-    if [${isContain} == "1"]
+    if [ ${isContain} == "1" ]
     then
         ## NTP子节点：
         echo "ntp salve"
@@ -618,7 +618,8 @@ function run(){
     # 开始测试，测试正常将返回1，如果有一个节点无法ssh通就表示失败
     ssh2nodes ${ssh_user} ${host}
     ssh_result=`echo $?`
-    if [${ssh_result} == "1"]
+    # if判断的时候，注意格式，需要留出空格才行
+    if [ ${ssh_result} == "1" ]
     then
         echo "SSH链接测试成功"
     else
@@ -635,7 +636,7 @@ function run(){
     # 判断当前是否需要安装HDFS服务,HostRole是当前角色
     isHDFS_master=(substr ${hdfs_master_node} ${HostRole})
     isHDFS_salve=(substr ${hdfs_slave_node} ${HostRole})
-    if [[${isHDFS_master} == "1" || ${isHDFS_salve} == "1" ]]
+    if [[ ${isHDFS_master} == "1" || ${isHDFS_salve} == "1" ]]
     then
         echo "执行HDFS安装部署"
         # 替换空格为逗号
@@ -656,7 +657,7 @@ function run(){
     # 判断当前是否需要安装HDFS服务,HostRole是当前角色
     isHBase_master=(substr ${hbase_master_node} ${HostRole})
     isHBase_salve=(substr ${hbase_slave_node} ${HostRole})
-    if [[${isHBase_master} == "1" || ${isHBase_salve} == "1" ]]
+    if [[ ${isHBase_master} == "1" || ${isHBase_salve} == "1" ]]
     then
         echo "执行HBase安装部署"
         # 替换空格为逗号
@@ -676,7 +677,7 @@ function run(){
     kafka_nodes=${RoleListDict["kafka"]}
     # 判断当前是否需要安装kafka
     isKafka=(substr ${kafka_nodes} ${HostRole})
-    if [ ${isKafka} == "1"]
+    if [ ${isKafka} == "1" ]
     then
         echo "执行kafka安装部署" 
         # 设置kafka配置
