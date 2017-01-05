@@ -14,7 +14,7 @@ declare -A RoleListDict
 declare -A NodeRoleDict
 
 
-################ Stage 1: 获取配置文件内容 ################
+################ Stage 1: 基础工具定义 ################
 
 # 获取字典内容：[Passing arrays as parameters in bash](http://stackoverflow.com/questions/1063347/passing-arrays-as-parameters-in-bash)
 function getDictContent(){
@@ -51,18 +51,17 @@ function getAssDictContent(){
 
 
 # 子字符串包含判断
-function substr{
+function substr(){
     STRING_A=$1
     STRING_B=$2
+
     if [[ ${STRING_A/${STRING_B}//} == $STRING_A ]]
     then
         ## is not substring.
-        echo "A donot contains B"
-        return 0
+        echo 0
     else
         ## is substring.
-        echo "A contains B"
-        return 1
+        echo 1
     fi
 }
 
@@ -72,6 +71,182 @@ function replaceBlank2Comma(){
     b=${context// /,}
     echo ${b}
 }
+
+
+################ Stage 2: 系统基本组件安装 ################
+# 安装JDK
+function installJDK(){
+    tarfilepath=$1
+    tarfoldername=$2
+    destfilepath=$3
+    destfolderename=$4
+    
+    # 解压到指定文件夹：
+    eval "tar -zxf ${tarfilepath} -C ${destfilepath}"
+    cd ${destfilepath}
+    mv ${tarfoldername}/ ${destfolderename}
+
+    # 添加服务启动脚本
+    sysintfile="/etc/profile"
+    echo "export JAVA_HOME=${destfilepath}/${destfolderename}" >> ${sysintfile}
+    echo "export PATH=$PATH:$JAVA_HOME/bin:$JAVA_HOME/jre/bin:$PATH" >> ${sysintfile}
+    echo "export CLASSPATH=.:$JAVA_HOME/lib:$JAVA_HOME/jre/lib" >> ${sysintfile}
+
+    # 刷新环境变量
+    eval "source ${sysintfile}"
+}
+
+# 安装MySQL
+function installMySQL(){
+    
+    tarfilepath=$1
+    desfilepath=$2
+    filename=$3
+    # 已经有的设置文件，cnfpath='/usr/local/my.cnf'
+    cnfpath=$4
+
+    # 解压tar包到指定文件夹
+    tar -zxf ${tarfilepath} -C ${desfilepath}
+    cd ${desfilepath}
+    mv ${filename}  ./mysql
+    
+    # 添加服务初始化表
+    groupadd mysql
+    useradd -r -g mysql mysql
+    chown -R mysql:mysql ./mysql
+    ./mysql/bin/mysqld --initialize-insecure --user=mysql  
+	
+    #需要更新my.cnf文件
+    cp  ${cnfpath} /etc/my.cnf 
+}
+
+# 启动MySQL服务
+function startMySQL(){
+     cd /usr/local/mysql/support-files/
+	 ./mysql.server start
+}
+
+# 关闭MySQL服务
+function stopMySQL(){
+     cd /usr/local/mysql/support-files/
+	 ./mysql.server stop
+}
+
+# 安装ELK
+function installELK(){
+    desfilepath='/usr/local/'
+    #elasticsearch安装位置
+    es_tarpath='/usr/local/elasticsearch-1.6.0.tar.gz'
+    filename_es='elasticsearch-1.6.0'
+    #logstash安装位置
+    log_tarpath='/usr/local/logstash-1.5.6.tar.gz'
+    filename_log='logstash-1.5.6'
+    #kibana安装位置
+    kb_tarpath='/usr/local/kibana-4.0.3-linux-x64.tar.gz'
+    filename_kb='kibana-4.0.3-linux-x64'
+    #filebeat安装位置
+    fb_tarpath='/usr/local/filebeat-1.0.0-x86_64.tar.gz'
+    filename_fb='filebeat-1.0.0-x86_64'
+
+
+    # 解压tar包到指定文件夹
+    tar -zxf ${es_tarpath} -C ${desfilepath}  
+	#es的读写权限
+    cd ${desfilepath}
+	chmod -R 775 ./elasticsearch-1.6.0	
+	
+    # 解压tar包到指定文件夹
+    tar -zxf ${log_tarpath} -C ${desfilepath}
+	
+    # 解压tar包到指定文件夹
+    tar -zxf ${kb_tarpath} -C ${desfilepath}  
+
+    # 解压tar包到指定文件夹
+    tar -zvxf ${fb_tarpath} -C ${desfilepath}  
+}
+
+# 更新ELK配置文件：
+function updateYML(){
+   #更新es node name
+   FILE=/usr/local/elasticsearch-1.6.0/config/elasticsearch.yml
+   KEY='node.name: "node_es1"'
+   INSTEAD='node.name: "node_es2"'
+   sed -i  's/'"$KEY"'/'"$INSTEAD"'/g'  $FILE
+   
+   #更新logstash所需conf
+   conf1path='/usr/local/beatsfinal.conf'
+   cp ${conf1path}  /usr/local/logstash-1.5.6/
+   cd /usr/local/logstash-1.5.6/
+   FILE=./beatsfinal.conf
+   ipaddr=`ip route show | sed -n '2'p|awk '{print $9}'`
+   KEY="0.0.0.0"
+   sed -i  's/'"$KEY"'/'"$ipaddr"'/g'  $FILE
+
+   #更新kibana所需conf
+   cd /usr/local/kibana-4.0.3-linux-x64/config/
+   FILE=./kibana.yml
+   ipaddr=`ip route show | sed -n '2'p|awk '{print $9}'`
+   KEY1="0.0.0.0"
+   KEY2="localhost:"
+   sed -i  's/'"$KEY1"'/'"$ipaddr"'/g'  $FILE
+   sed -i  's/'"$KEY2"'/'"$ipaddr":'/g'  $FILE
+
+   
+   #更新filebeat所需 yml
+   conf2path='/usr/local/filebeat.yml'
+   cp ${conf2path}  /usr/local/filebeat-1.0.0-x86_64/
+     cd /usr/local/filebeat-1.0.0-x86_64/
+   FILE=./filebeat.yml
+   KEY='#name:'
+   INSTEAD='name: beats1'
+   sed -i  's/'"$KEY"'/'"$INSTEAD"'/g'  $FILE
+}
+
+# 启动ES
+function startES(){
+    /usr/local/elasticsearch-1.6.0/bin/elasticsearch  -d
+}
+
+# 启动logstash
+function startlogstash(){
+   cd /usr/local/logstash-1.5.6/
+   ./bin/logstash -f ./beatsfinal.conf &
+}
+
+# 启动kibana
+function startkibana(){
+    cd /usr/local//kibana-4.0.3-linux-x64/
+    ./bin/kibana &
+}
+
+# 启动filebeat
+function startfilebeat(){
+  cd /usr/local/filebeat-1.0.0-x86_64/
+  ./filebeat -e -c ./filebeat.yml   &
+}
+
+# 关闭ES
+function stopES(){
+    ps -ef | grep elasticsearch | awk '{print $2}'|xargs kill 
+}
+
+# 关闭logstash
+function stoplogstash(){
+    ps -ef | grep logstash | awk '{print $2}'|xargs kill
+}
+
+# 关闭kibana
+function stopkibana(){
+    ps -ef | grep kibana | awk '{print $2}'|xargs kill
+}
+
+# 关闭filebeat
+function stopfilebeat(){
+   ps -ef | grep filebeat | awk '{print $2}'|xargs kill
+}
+
+
+################ Stage 3: 配置文件解析和获取参数 ################
 
 # 初始化IPList字典
 function initIPListDict(){
@@ -104,7 +279,7 @@ function initNodeRoleDict(){
     file=$1
     tmpfile=$2
     echo `cat $file |awk -F'=' '{split($2,arr,",");for(i=1;i<=length(arr);i++)z[arr[i]]=z[arr[i]]?z[arr[i]]","$1:$1}END{for(y in z)print y"="z[y]}'` >> $tmpfile
-    source $tmpfile
+    eval "source $tmpfile"
     NodeRoleDict=([node1]=$node1 [node2]=$node2 [node3]=$node3 [node4]=$node4 [node5]=$node5 [node6]=$node6 [node7]=$node7 [node8]=$node8 [node9]=$node9 [node10]=$node10 [node11]=$node11)
     rm -f $tmpfile
 }
@@ -156,6 +331,8 @@ function initNodeRoleDictVar(){
 #initNodeRoleDict
 
 
+################ Stage 4: 系统环境准备 ################
+
 # 根据输入修改IP
 function changeHostIP(){
     eth=$1
@@ -175,13 +352,16 @@ function changeHostIP(){
 
 # 写入hosts文件：
 function write2hosts(){
-    source $1
+    file=$1
     hostfile=$2
 
+    source ${file}
+
     # 
-    i=1
+    
     if [[ ${hdfs_master/","//} != $hdfs_master ]]
     then
+    i=1
     while((1==1))
     do
             split=`echo $hdfs_master|cut -d "," -f$i`
@@ -316,7 +496,7 @@ function write2hosts(){
 }
 
 
-################ Stage 2: 根据当前节点的角色进行设置 ################
+################ Stage 5: 根据当前节点的角色进行设置 ################
 # 获取本机的hostname：
 function getCurrentHostName(){
     local_host="`hostname --fqdn`"
@@ -333,10 +513,9 @@ function getCurrentIP(){
 function getCurrentHOSTRole(){
     # 根据当前节点的HOST获取角色
     currentHostName=$1
-    currentHostRole=${NodeRoleDict[$currentHostName]}
+    currentHostRole=${NodeRoleDict["$currentHostName"]}
     echo "${currentHostRole}"
 }
-
 
 # NTP服务端设置：
 function ntp_master_config(){
@@ -362,16 +541,14 @@ function ntp_slaver_config(){
     echo "完成NTP子节点设置"
 }
 
-
 # NTP服务部署入口：
 function ntp_master_deploy(){
     currentHostRole=$(getCurrentHOSTRole)
     ntp_config_file=$1
     ntp_master_ip=$2
 
-    echo ${currentHostRole}
     # 然后判断是否包含
-    isContain=(substr ${currentHostRole} "NTP_MASTER")
+    isContain=(substr ${currentHostRole} "ntp_master")
     if [${isContain} == "1"]
     then
         ## NTP子节点：
@@ -391,7 +568,9 @@ function ssh_node(){
     USERNAME=$1
     HOSTS=$2
     SCRIPT="pwd; ls"
-    for HOSTNAME in ${HOSTS} ; do
+    for HOSTNAME in ${HOSTS}
+    do
+        echo "current ssh to : ${HOSTNAME}"
         ssh -l ${USERNAME} ${HOSTNAME} "${SCRIPT}"
     done
     return 1
@@ -414,99 +593,140 @@ function setup_kafka(){
     sed "/zookeeper.connect=localhost:2181/{s/.*/zookeeper.connect="${content}"/}" ${KAFKA_CONFIG}
 }
 
-# 安装tar格式MYSql
-function installMySQL(){
-    cd /usr/local/soft/
-    tar zvxf mysql-5.7.10-linux-glibc2.5-i686.tar.gz -C /usr/local
-    cd ..
-    mv mysql-5.7.10-linux-glibc2.5-i686/ mysql
-    
+
+################ Stage 6: 测试环境设置 ################
+# 测试脚本执行前的环境设置
+function testInit(){
+    # 测试前清空缓存：
+    rm -rf /home/wentao/shell/dest/*
+
+    # 重新获取测试文件：
+    cp /etc/sysconfig/network-scripts/ifcfg-ens33 /home/wentao/shell/dest/
+    cp /etc/hosts /home/wentao/shell/dest/
+    cp /etc/ntp.conf /home/wentao/shell/dest/
+    cp /etc/profile /home/wentao/shell/dest/
+    cp /home/wentao/shell/tmp/server.properties.bak /home/wentao/shell/dest/server.properties
+
+    # 修改主机名，完成角色替换
+    HostName=$(getCurrentHostName)
+    echo "当前节点的hostname为：${HostName}"
+    new_hostname=$1
+    hostname ${new_hostname}
+    echo "修改当前节点的hostname为：${new_hostname}"
+
+    # 获取当前角色
+    HostName=$(getCurrentHostName)
+    HostIP=$(getCurrentIP)
+    HostRole=$(getCurrentHOSTRole ${HostName})
+    echo "完成角色切换"
+    echo "当前节点的IP为：${HostIP}"
+    echo "当前节点的hostname为：${HostName}"
+    echo "当前节点的角色为：${HostRole}"
 }
 
 
-
-################ Stage 3: 组织完成安装部署的完整调用流程 ################
+################ Stage 7: 组织完成安装部署的完整调用流程 ################
 function run(){
+
+    ################# 脚本中使用的静态路径 #################
+    # 设置网卡配置文件路径：
+    ifcfg_file='/home/wentao/shell/dest/ifcfg-ens33'
+    # 设置当前hosts文件路径：
+    hostsfile='/home/wentao/shell/dest/hosts'
+    # 设置ntp服务的配置文件：
+    ntp_config_file="/home/wentao/shell/dest/ntp.conf"
+    # SSH户名设置：
+    ssh_user='root'
+    # 设置jdk安装常量：
+    tarfilepath="/home/wentao/shell/package/jdk-8u112-linux-x64.tar.gz"
+    tarfoldername="jdk1.8.0_112"
+    destfilepath="/home/wentao/shell/dest/"
+    destfolderename="JDK"
+    sysintfile="/home/wentao/shell/dest/profile"
+    # 设置MySQL安装常量：
+
+    # 初始化NodeRoleDict需要的临时文件路径：
+    tmpfile="/home/wentao/shell/dest/my.ini"
+    # 设置kafka的配置文件路径：
+    kafka_config='/home/wentao/shell/dest/server.properties'
+
 
     ################# 获取用户输入 #################
     # 输入当前节点要设置的IP地址：
-    read -p "输入要设置的IP地址：" IP
-    # 输入当前节点中role.ini文件所在的位置
-    read -p "输入role.ini文件所在的位置：" rolefile
-    # 输入当前节点中iplist.ini文件所在的位置
-    read -p "输入iplist.ini文件所在的位置：" iplistfile
+    #read -p "输入要设置的IP地址：" IP
+    # 输入当前节点中role.ini文件所在的位置：
+    #read -p "输入role.ini文件所在的位置：" rolefile
+    # 输入当前节点中iplist.ini文件所在的位置：
+    #read -p "输入iplist.ini文件所在的位置：" iplistfile
+
+    IP='192.168.15.133'
+    rolefile="/home/wentao/shell/installHadoopCluster/role.ini"
+    iplistfile="/home/wentao/shell/installHadoopCluster/iplist.ini"
+
+
 
     ################# 确认用户输入 #################
-    echo ${IP}
-    echo ${rolefile}
-    echo ${iplistfile}
+    echo "确认当前输入IP : ${IP}"
+    echo "确认当前role.ini路径 : ${rolefile}"
+    echo "确认当前iplist.ini路径 : ${iplistfile}"
+
 
     ################# 初始化全局设置 #################
     # 初始化IPListDict：
-    initIPListDict ${IPListFile}
-    #打印指定key的value
-    echo ${IPListDict["node1"]}
-    #打印所有key值
-    echo ${!IPListDict[*]}
-    #打印所有value
-    echo ${IPListDict[*]}
-
+    initIPListDict ${iplistfile}
     # 初始化RoleListDict:
     initRoleListDict ${rolefile}
-    #打印指定key的value
-    echo ${RoleListDict["ntp_master"]}
-    #打印所有key值
-    echo ${!RoleListDict[*]}
-    #打印所有value
-    echo ${RoleListDict[*]}
-
     # 初始化NodeRoleDict：
-    # 设置临时文件路径
-    tmpfile="/home/wentao/shell/my.ini"
     initNodeRoleDict ${rolefile} ${tmpfile}
 
     # 查看字典初始化结果：传入关联数组作为参数
-    getDictContent IPListDict[@]
-    getDictContent RoleListDict[@]
-    getDictContent NodeRoleDict[@]
+    echo "查看IPListDict字典："
+    for k in "${!IPListDict[@]}"
+    do
+        echo $k '--' ${IPListDict[$k]}
+    done
+    #getDictContent IPListDict[@]
+    echo "查看RoleListDict字典："
+    for k in "${!RoleListDict[@]}"
+    do
+        echo $k '--' ${RoleListDict[$k]}
+    done
+    #getDictContent RoleListDict[@]
+    echo "查看NodeRoleDict字典："
     for k in "${!NodeRoleDict[@]}"
     do
         echo $k '--' ${NodeRoleDict[$k]}
     done
+    #getDictContent NodeRoleDict[@]
+
+
+    ################# 基本环境安装 #################
+    installJDK ${tarfilepath} ${tarfoldername} ${destfilepath} ${destfolderename} ${sysintfile}
 
 
     ################# 开始进行调用 #################
     # （1）根据当前用户的输入，设置本机IP
-    # 设置网卡配置文件路径
-    ifcfg_file='/home/wentao/shell/ifcfg-ens33'
     changeHostIP ${ifcfg_file} ${IP}
     #changeHostIP '/etc/sysconfig/network-scripts/ifcfg-ens18' '192.168.1.100'
 
-    # 根据用户指定的iplist.ini文件，设置hosts
-    # 设置当前hosts文件路径
-    hostsfile='/home/wentao/shell/hosts'
+    # （2）根据用户指定的iplist.ini文件，设置hosts
     write2hosts ${rolefile} ${hostsfile}
-    #write2hosts '/home/wentao/shell/role.ini' '/etc/hosts'
 
-    # 获取当前角色:
+    # （3）获取当前角色:
     HostName=$(getCurrentHostName)
     HostIP=$(getCurrentIP)
-    HostRole=$(getCurrentHOSTRole ${HostName} ${HostIP})
+    HostRole=$(getCurrentHOSTRole ${HostName})
     echo "当前节点的IP为：${HostIP}"
     echo "当前节点的hostname为：${HostName}"
     echo "当前节点的角色为：${HostRole}"
 
-    # 根据当前角色设置NTP：
-    # 设置ntp服务的配置文件
-    ntp_config_file="/home/wentao/shell/ntp_slave.conf"
+    # （4）根据当前角色设置NTP服务：
     # 根据role.ini获取ntp服务器的ip
     ntp_master_node=${RoleListDict["ntp_master"]}
     ntp_master_ip=${IPListDict[$ntp_master_node]}
     ntp_master_deploy ${ntp_config_file} ${ntp_master_ip}
 
-    # 根据当前角色进行ssh测试：
-    # 默认用户名都是root
-    ssh_user='root'
+    # （5）根据当前角色进行ssh测试：
     # 获取IPListDict的所有值进行连接测试
     host=${!IPListDict[*]}
     # 需要除去自己当前的ip，否则无法连接成功
@@ -520,7 +740,7 @@ function run(){
         echo "SSH链接测试失败"
     fi
 
-    # 根据当前角色安装HDFS：
+    # （6）根据当前角色安装HDFS：
     # 获取hdfs_master节点列表
     hdfs_master_node=${RoleListDict["hdfs_master"]}
     # 获取hdfs_second_master节点列表
@@ -530,7 +750,7 @@ function run(){
     # 判断当前是否需要安装HDFS服务,HostRole是当前角色
     isHDFS_master=(substr ${hdfs_master_node} ${HostRole})
     isHDFS_salve=(substr ${hdfs_slave_node} ${HostRole})
-    if [${isHDFS_master} == "1" || ${isHDFS_salve} == "1" ]
+    if [[${isHDFS_master} == "1" || ${isHDFS_salve} == "1" ]]
     then
         echo "执行HDFS安装部署"
         # 替换空格为逗号
@@ -541,7 +761,7 @@ function run(){
         echo "不需要执行HDFS安装部署"
     fi
 
-    # 根据当前角色安装HBase：
+    # （7）根据当前角色安装HBase：
     # 获取zookeeper节点列表
     zookeeper_node=${RoleListDict["zookeeper"]}
     # 获取hbase_master节点列表
@@ -551,7 +771,7 @@ function run(){
     # 判断当前是否需要安装HDFS服务,HostRole是当前角色
     isHBase_master=(substr ${hbase_master_node} ${HostRole})
     isHBase_salve=(substr ${hbase_slave_node} ${HostRole})
-    if [${isHBase_master} == "1" || ${isHBase_salve} == "1" ]
+    if [[${isHBase_master} == "1" || ${isHBase_salve} == "1" ]]
     then
         echo "执行HBase安装部署"
         # 替换空格为逗号
@@ -563,10 +783,10 @@ function run(){
         echo "不需要执行HBase安装部署"
     fi
 
-    # 根据当前角色安装zookeeper：
+    # （8）根据当前角色安装zookeeper：
     sh zookeeper-install.sh -q ${zookeeper_nodes}
 
-    # 安装kafka：
+    # （9）安装kafka：
     # 从role.ini获取kafka对应的节点列表
     kafka_nodes=${RoleListDict["kafka"]}
     # 判断当前是否需要安装kafka
@@ -574,14 +794,18 @@ function run(){
     if [ ${isKafka} == "1"]
     then
         echo "执行kafka安装部署" 
-        # 设置kafka的配置文件路径
-        kafka_config='server.properties'
         # 设置kafka配置
         setup_kafka "${zookeeper_node}" ${kafka_config}
     else
         echo "不需要执行kafka安装部署"
     fi
     
-    ################# 开始进行调用 #################
+
+    ################# 完成自动化部署 #################
     echo "当前节点安装部署结束"
 }
+
+
+################ Stage 8: 部署 ################
+testInit "node1"
+run
