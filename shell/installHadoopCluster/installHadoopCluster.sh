@@ -254,7 +254,7 @@ function initIPListDict(){
     file=$1
     # get node ip
     source ${file}
-    IPListDict=([node1]=$node1 [node2]=$node2 [node3]=$node3 [node4]=$node4 [node5]=$node5 [node6]=$node6 [node7]=$node7 [node8]=$node8 [node9]=$node9 [node10]=$node10 [node11]=$node11)
+    IPListDict=([node1]=$node1 [node2]=$node2 [node3]=$node3 [node4]=$node4 [node5]=$node5 [node6]=$node6 [node7]=$node7 [node8]=$node8 [node9]=$node9 [node10]=$node10)
 }
 
 # 初始化角色字典
@@ -280,7 +280,7 @@ function initNodeRoleDict(){
     tmpfile=$2
     echo `cat $file |awk -F'=' '{split($2,arr,",");for(i=1;i<=length(arr);i++)z[arr[i]]=z[arr[i]]?z[arr[i]]","$1:$1}END{for(y in z)print y"="z[y]}'` >> $tmpfile
     eval "source $tmpfile"
-    NodeRoleDict=([node1]=$node1 [node2]=$node2 [node3]=$node3 [node4]=$node4 [node5]=$node5 [node6]=$node6 [node7]=$node7 [node8]=$node8 [node9]=$node9 [node10]=$node10 [node11]=$node11)
+    NodeRoleDict=([node1]=$node1 [node2]=$node2 [node3]=$node3 [node4]=$node4 [node5]=$node5 [node6]=$node6 [node7]=$node7 [node8]=$node8 [node9]=$node9 [node10]=$node10)
     rm -f $tmpfile
 }
 
@@ -350,151 +350,23 @@ function changeHostIP(){
     echo "设置IP成功"
 }
 
-# 写入hosts文件：
 function write2hosts(){
-    file=$1
+    iplist_file=$1
     hostfile=$2
+    source ${iplist_file}
 
-    source ${file}
-
-    # 
-    
-    if [[ ${hdfs_master/","//} != $hdfs_master ]]
-    then
-    i=1
-    while((1==1))
-    do
-            split=`echo $hdfs_master|cut -d "," -f$i`
-            if [ "$split" != "" ]
-            then
-                    ((i++))
-                    echo "hdfs_master     " ${IPListDict["$split"]} >> ${hostfile}
-            else
-                    break
-            fi
-    done
-    else
-            echo "hdfs_master        " ${IPListDict["$hdfs_master"]} >> ${hostfile}
-    fi
-
-
-    if [[ ${ntp_master/","//} != $ntp_master ]]
-    then
-    i=1
-    while((1==1))
-    do
-            split=`echo $ntp_master|cut -d "," -f$i`
-            if [ "$split" != "" ]
-            then
-                ((i++))
-                echo "ntp_master     " ${IPListDict["$split"]} >> ${hostfile}
-            else
-                break
-            fi
-    done
-    else
-            echo "ntp_master        " ${IPListDict["$ntp_master"]} >> ${hostfile}
-    fi
-
-
-    if [[ ${hdfs_slave/","//} != $hdfs_slave ]]
-    then
-    i=1
-    while((1==1))
-    do
-            split=`echo $hdfs_slave|cut -d "," -f$i`
-            if [ "$split" != "" ]
-            then
-                ((i++))
-                echo "hdfs_slave     " ${IPListDict["$split"]} >> ${hostfile}
-            else
-                break
-            fi
-    done
-    else
-            echo "hdfs_slave        " ${IPListDict["$hdfs_slave"]} >> ${hostfile}
-    fi
-
-
-    if [[ ${zookeeper/","//} != $zookeeper ]]
-    then
-    i=1
-    while((1==1))
-    do
-            split=`echo $zookeeper|cut -d "," -f$i`
-            if [ "$split" != "" ]
-            then
-                ((i++))
-                echo "zookeeper     " ${IPListDict["$split"]} >> ${hostfile}
-            else
-                break
-            fi
-    done
-    else
-            echo "zookeeper        " ${IPListDict["$zookeeper"]} >> ${hostfile}
-    fi
-
-
-
-    if [[ ${hbase_master/","//} != $hbase_master ]]
-    then
-    i=1
-    while((1==1))
-    do
-            split=`echo $hbase_master|cut -d "," -f$i`
-            if [ "$split" != "" ]
-            then
-                ((i++))
-                echo "hbase_master     " ${IPListDict["$split"]} >> ${hostfile}
-            else
-                break
-            fi
-    done
-    else
-            echo "hbase_master        " ${IPListDict["$hbase_master"]} >> ${hostfile}
-    fi
-
-
-
-    if [[ ${hbase_slave/","//} != $hbase_slave ]]
-    then
-    i=1
-    while((1==1))
-    do
-            split=`echo $hbase_slave|cut -d "," -f$i`
-            if [ "$split" != "" ]
-            then
-                ((i++))
-                echo "hbase_slave     " ${IPListDict["$split"]} >> ${hostfile}
-            else
-                break
-            fi
-    done
-    else
-            echo "hbase_slave        " ${IPListDict["$hbase_slave"]} >> ${hostfile}
-    fi
-
-
-
-    if [[ ${kafka/","//} != $kafka ]]
-    then
-    i=1
-    while((1==1))
-    do
-            split=`echo $kafka|cut -d "," -f$i`
-            if [ "$split" != "" ]
-            then
-                ((i++))
-                echo "kafka     " ${IPListDict["$split"]} >> ${hostfile}
-            else
-                break
-            fi
-    done
-    else
-            echo "kafka        " ${IPListDict["$kafka"]} >> ${hostfile}
-    fi
+    echo "$node1"" node1" >> ${hostfile}
+    echo "$node2"" node2" >> ${hostfile}
+    echo "$node3"" node3" >> ${hostfile}
+    echo "$node4"" node4" >> ${hostfile}
+    echo "$node5"" node5" >> ${hostfile}
+    echo "$node6"" node6" >> ${hostfile}
+    echo "$node7"" node7" >> ${hostfile}
+    echo "$node8"" node8" >> ${hostfile}
+    echo "$node9"" node9" >> ${hostfile}
+    echo "$node10"" node10" >> ${hostfile}
+    systemctl restart network.service
 }
-
 
 ################ Stage 5: 根据当前节点的角色进行设置 ################
 # 获取本机的hostname：
@@ -564,16 +436,27 @@ function ntp_master_deploy(){
 }
 
 # SSH到子节点，执行命令退出
-function ssh_node(){
-    USERNAME=$1
-    HOSTS=$2
-    SCRIPT="pwd; ls"
-    for HOSTNAME in ${HOSTS}
+function ssh2nodes(){
+    username=$1
+    iplist=$2
+    script="pwd; ls"
+
+    # 默认全部连接成功
+    val=1
+    for currentip in ${iplist}
     do
-        echo "current ssh to : ${HOSTNAME}"
-        ssh -l ${USERNAME} ${HOSTNAME} "${SCRIPT}"
+        echo "current ssh to : ${currentip}"
+        local RESULTS
+        RESULTS=$(ssh -l ${username} ${currentip} "${script}")
+        tmp=`echo $?`
+        # 如果ssh执行失败，返回255
+        if [ "$tmp" == 255 ]
+        then
+            val=0
+            break
+        fi
     done
-    return 1
+    return "$val"
 }
 
 # kafka设置
@@ -710,7 +593,7 @@ function run(){
     #changeHostIP '/etc/sysconfig/network-scripts/ifcfg-ens18' '192.168.1.100'
 
     # （2）根据用户指定的iplist.ini文件，设置hosts
-    write2hosts ${rolefile} ${hostsfile}
+    write2hosts ${iplistfile} ${hostsfile}
 
     # （3）获取当前角色:
     HostName=$(getCurrentHostName)
@@ -727,13 +610,15 @@ function run(){
     ntp_master_deploy ${ntp_config_file} ${ntp_master_ip}
 
     # （5）根据当前角色进行ssh测试：
-    # 获取IPListDict的所有值进行连接测试
-    host=${!IPListDict[*]}
-    # 需要除去自己当前的ip，否则无法连接成功
-    host=(${host[@]/${IP}/})
-    # 开始测试，如果测试正常将返回1
-    ssh_result=$(ssh_node ${ssh_user} ${host})
-    if [ssh_result == "1"]
+    # 获取IPListDict的所有IP值进行连接测试
+    host=${IPListDict[*]}
+    # 需要除去自己当前的ip，否则无法连接成功：[Remove element from array shell](http://stackoverflow.com/questions/16860877/remove-element-from-array-shell)
+    delete=(${IP})
+    host=( "${host[@]/$delete}" )
+    # 开始测试，测试正常将返回1，如果有一个节点无法ssh通就表示失败
+    ssh2nodes ${ssh_user} ${host}
+    ssh_result=`echo $?`
+    if [${ssh_result} == "1"]
     then
         echo "SSH链接测试成功"
     else
