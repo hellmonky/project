@@ -50,6 +50,13 @@ echo "set ${hbase_env_sh} successful!"
 i=1
 while((1==1))  
 do  
+	regions=$(echo ${hbase_regionservers_hostname} | grep ",")
+	if [[ "${regions}" == "" ]]
+	    then
+            echo ${hbase_regionservers_hostname}>>${regionservers} 
+	    break
+	fi
+
         split=`echo ${hbase_regionservers_hostname}|cut -d "," -f$i`  
         if [ "${split}" != "" ]  
         then  

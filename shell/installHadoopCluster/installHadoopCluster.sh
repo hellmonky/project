@@ -50,7 +50,7 @@ function getAssDictContent(){
 }
 
 
-# 子字符串包含判断
+# 子字符串包含判断：[Bash Shell怎么判断字符串的包含关系](https://segmentfault.com/q/1010000000114932)
 function substr(){
     STRING_A=$1
     STRING_B=$2
@@ -130,6 +130,77 @@ function startMySQL(){
 function stopMySQL(){
      cd /usr/local/mysql/support-files/
 	 ./mysql.server stop
+}
+
+# 允许远程登陆用户添加：
+function addRomoteLoginUser(){
+    cd /usr/local/mysql/bin/
+
+    mysqllogin="root"
+    mysqlpass="" 
+    newusername="iscas"
+    newuserpass="12345"
+    sql_createuser="CREATE USER '${newusername}' IDENTIFIED BY '${newuserpass}';";
+    sql_grant1="GRANT ALL PRIVILEGES ON *.* TO '${newusername}'@'%';";
+    sql_grant2="GRANT ALL PRIVILEGES ON *.* TO '${newusername}'@'localhost';";
+    sql_add="${sql_createuser}${sql_grant1}${sql_grant2}";
+    ./mysql --user=$mysqllogin --password=$mysqlpass --execute="$sql_add";
+}
+
+# 删除用户：
+function deleteuser(){
+    cd /usr/local/mysql/bin/
+    delusername="iscas"
+    mysqllogin="root" 
+    mysqlpass="" 
+
+    sql_del1="DROP user '${delusername}'@'%';";
+    sql_del2="DROP user '${delusername}'@localhost;";
+    sql_add="${sql_del1}";
+   ./mysql --user=$mysqllogin --password=$mysqlpass --execute="$sql_add";
+}
+
+# root用户登录：
+function rootUserLogin(){
+    cd /usr/local/mysql/bin/
+    mysqllogin="root"
+    mysqlpass=""
+   ./mysql --user=$mysqllogin --password=$mysqlpass ;
+   #修改root密码
+   #newpass="12345"
+   #sql_db="use mysql;";
+   #sql_change="update user set authentication_string =password('${newpass}') where user='${mysqllogin}'; ";
+   #sql_flush="flush privileges;";
+   #sql_add="${sql_db}${sql_change}${sql_flush}";
+   #echo $sql_add;
+   #./mysql --user=$mysqllogin --password=$mysqlpass --execute="$sql_add";
+}
+
+# 使用SQL脚本创建表：
+function createtable(){
+    cd /usr/local/mysql/bin/
+    mysqllogin="iscas" 
+    mysqlpass="12345" 
+
+    #locahost登录
+    createdb="test";   
+    location="/usr/local/componetmetadata.sql";
+    ipaddr=`ip route show | sed -n '2'p|awk '{print $9}'`
+    sql_db="Create Database if Not Exists ${createdb} character set utf8 ;";
+    select_db="use ${createdb};";
+    sql_loc="source ${location};";
+    sql_add="${sql_db}${select_db}${sql_loc}";
+   ./mysql --user=$mysqllogin --password=$mysqlpass  -h$ipaddr --execute="$sql_add";
+}
+
+# 本机登陆：
+function localhostlogin(){
+    cd /usr/local/mysql/bin/
+    ipaddr=`ip route show | sed -n '2'p|awk '{print $9}'`
+    #echo $ipaddr;
+    mysqllogin="iscas"
+    mysqlpass="12345"
+   ./mysql --user=$mysqllogin --password=$mysqlpass -h$ipaddr;
 }
 
 # 安装ELK
@@ -248,6 +319,20 @@ function stopfilebeat(){
 
 ################ Stage 3: 配置文件解析和获取参数 ################
 
+# 初始化ini文件：去除\r\n导致的识别问题
+function normalizdinifile(){
+    rolefile=$1
+    iplistfile=$2
+    tmpfile=$3
+
+    cat -v ${rolefile} | tr -d '^M'  > ${tmpfile}
+    rm -f ${rolefile}
+    mv ${tmpfile} role.ini
+    cat -v ${iplistfile} | tr -d '^M'  > ${tmpfile}
+    rm -f ${iplistfile}
+    mv ${tmpfile} iplist.ini
+}
+
 # 初始化IPList字典
 function initIPListDict(){
     # read iplist.ini
@@ -261,15 +346,7 @@ function initIPListDict(){
 function initRoleListDict(){
     # read iplist.ini
     file=$1
-    # get node ip
-    ntp_master=`cat ${file} | awk -F '[=,{}]+' '{for(i=1;i<NF;i++){if($i~/ntp_master/)print $(i+1) }}'`
-    hdfs_master=`cat ${file} | awk -F '[=,{}]+' '{for(i=1;i<NF;i++){if($i~/hdfs_master/)print $(i+1) }}'`
-    hdfs_slave=`cat ${file} | awk -F '[=,{}]+' '{for(i=1;i<NF;i++){if($i~/hdfs_slave/)print $(i+1) }}'`
-    zookeeper=`cat ${file} | awk -F '[=,{}]+' '{for(i=1;i<NF;i++){if($i~/zookeeper/)print $(i+1) }}'`
-    hbase_master=`cat ${file} | awk -F '[=,{}]+' '{for(i=1;i<NF;i++){if($i~/hbase_master/)print $(i+1) }}'`
-    hbase_slave=`cat ${file} | awk -F '[=,{}]+' '{for(i=1;i<NF;i++){if($i~/hbase_slave/)print $(i+1) }}'`
-    kafka=`cat ${file} | awk -F '[=,{}]+' '{for(i=1;i<NF;i++){if($i~/kafka/)print $(i+1) }}'`
-
+    source ${file}
     RoleListDict=([ntp_master]=$ntp_master [hdfs_master]=$hdfs_master [hdfs_slave]=$hdfs_slave [zookeeper]=$zookeeper [hbase_master]=$hbase_master [hbase_slave]=$hbase_slave [kafka]=$kafka)
 }
 
@@ -415,23 +492,26 @@ function ntp_slaver_config(){
 
 # NTP服务部署入口：
 function ntp_master_deploy(){
-    currentHostRole=$(getCurrentHOSTRole)
-    ntp_config_file=$1
-    ntp_master_ip=$2
+    currenthostname=$1
+    ntp_config_file=$2
+    ntp_master_ip=$3
+
+    # 获取当前节点的角色
+    currentHostRole=$(getCurrentHOSTRole ${currenthostname})
 
     # 然后判断是否包含
-    isContain=(substr ${currentHostRole} "ntp_master")
+    isContain=$(substr ${currentHostRole} "ntp_master")
     if [ ${isContain} == "1" ]
     then
-        ## NTP子节点：
-        echo "ntp salve"
-        ntp_slaver_config ${ntp_config_file} ${ntp_master_ip}
-        return 0
-    else
         ## NTP主节点：
-        echo "ntp master"
+        echo "ntp master detected"
         ntp_master_config ${ntp_config_file}
         return 1
+    else
+        ## NTP子节点：
+        echo "ntp salve detected"
+        ntp_slaver_config ${ntp_config_file} ${ntp_master_ip}
+        return 0
     fi
 }
 
@@ -526,26 +606,24 @@ function run(){
     destfilepath="/home/wentao/shell/dest/"
     destfolderename="JDK"
     sysintfile="/home/wentao/shell/dest/profile"
-    # 设置MySQL安装常量：
-
     # 初始化NodeRoleDict需要的临时文件路径：
-    tmpfile="/home/wentao/shell/dest/my.ini"
+    tmpfile="/home/wentao/shell/dest/tmp.ini"
     # 设置kafka的配置文件路径：
     kafka_config='/home/wentao/shell/dest/server.properties'
+    # role.ini文件路径：
+    rolefile="/home/wentao/shell/installHadoopCluster/role.ini"
+    # iplist.ini文件路径：
+    iplistfile="/home/wentao/shell/installHadoopCluster/iplist.ini"
+    # 设置MySQL安装常量：
 
 
     ################# 获取用户输入 #################
-    # 输入当前节点要设置的IP地址：
-    #read -p "输入要设置的IP地址：" IP
     # 输入当前节点中role.ini文件所在的位置：
     #read -p "输入role.ini文件所在的位置：" rolefile
     # 输入当前节点中iplist.ini文件所在的位置：
     #read -p "输入iplist.ini文件所在的位置：" iplistfile
-
-    IP='192.168.15.133'
-    rolefile="/home/wentao/shell/installHadoopCluster/role.ini"
-    iplistfile="/home/wentao/shell/installHadoopCluster/iplist.ini"
-
+    # 输入当前节点要设置的IP地址：
+    read -p "输入要设置的IP地址：" IP
 
 
     ################# 确认用户输入 #################
@@ -555,6 +633,8 @@ function run(){
 
 
     ################# 初始化全局设置 #################
+    # 规范输入文件：
+    normalizdinifile ${iplistfile} ${rolefile} ${tmpfile}
     # 初始化IPListDict：
     initIPListDict ${iplistfile}
     # 初始化RoleListDict:
@@ -584,7 +664,7 @@ function run(){
 
 
     ################# 基本环境安装 #################
-    installJDK ${tarfilepath} ${tarfoldername} ${destfilepath} ${destfolderename} ${sysintfile}
+    #installJDK ${tarfilepath} ${tarfoldername} ${destfilepath} ${destfolderename} ${sysintfile}
 
 
     ################# 开始进行调用 #################
@@ -606,10 +686,10 @@ function run(){
     # （4）根据当前角色设置NTP服务：
     # 根据role.ini获取ntp服务器的ip
     ntp_master_node=${RoleListDict["ntp_master"]}
-    ntp_master_ip=${IPListDict[$ntp_master_node]}
+    ntp_master_ip=${IPListDict["$ntp_master_node"]}
     ntp_master_deploy ${ntp_config_file} ${ntp_master_ip}
 
-    # （5）根据当前角色进行ssh测试：
+    # （5）根据当前角色进行ssh测试：在安装中不需要进行SSH测试，在启动服务的时候进行测试
     # 获取IPListDict的所有IP值进行连接测试
     host=${IPListDict[*]}
     # 需要除去自己当前的ip，否则无法连接成功：[Remove element from array shell](http://stackoverflow.com/questions/16860877/remove-element-from-array-shell)
@@ -627,60 +707,54 @@ function run(){
     fi
 
     # （6）根据当前角色安装HDFS：
-    # 获取hdfs_master节点列表
-    hdfs_master_node=${RoleListDict["hdfs_master"]}
-    # 获取hdfs_second_master节点列表
-    hdfs_second_master_node=""
-    # 获取hdfs_salve节点列表
-    hdfs_slave_node=${RoleListDict["hdfs_slave"]}
-    # 判断当前是否需要安装HDFS服务,HostRole是当前角色
-    isHDFS_master=(substr ${hdfs_master_node} ${HostRole})
-    isHDFS_salve=(substr ${hdfs_slave_node} ${HostRole})
+    isHDFS_master=$(substr ${HostRole} "hdfs_master")
+    isHDFS_salve=$(substr ${HostRole} "hdfs_slave")
+    echo "is hdfs master:${isHDFS_master}"
+    echo "is hdfs slave:${isHDFS_salve}"
     if [[ ${isHDFS_master} == "1" || ${isHDFS_salve} == "1" ]]
     then
         echo "执行HDFS安装部署"
-        # 替换空格为逗号
-        hdfs_slave_nodes=(replaceBlank2Comma ${hdfs_slave_node})
-        # 部署HDFS服务：
+        hdfs_master_node=${RoleListDict["hdfs_master"]}
+        hdfs_second_master_node=""
+        hdfs_slave_node=${RoleListDict["hdfs_slave"]}
+        hdfs_slave_nodes=$(replaceBlank2Comma ${hdfs_slave_node})
         sh hadoop-install.sh -m ${hdfs_master_node} -n ${hdfs_second_master_node} -s ${hdfs_slave_nodes}
     else
         echo "不需要执行HDFS安装部署"
     fi
 
     # （7）根据当前角色安装HBase：
-    # 获取zookeeper节点列表
-    zookeeper_node=${RoleListDict["zookeeper"]}
-    # 获取hbase_master节点列表
-    hbase_master_node=${RoleListDict["hbase_master"]}
-    # 获取hbase_slave节点列表
-    hbase_slave_node=${RoleListDict["hbase_slave"]}
-    # 判断当前是否需要安装HDFS服务,HostRole是当前角色
-    isHBase_master=(substr ${hbase_master_node} ${HostRole})
-    isHBase_salve=(substr ${hbase_slave_node} ${HostRole})
+    isHBase_master=$(substr ${HostRole} "hbase_master")
+    isHBase_salve=$(substr ${HostRole} "hbase_slave")
     if [[ ${isHBase_master} == "1" || ${isHBase_salve} == "1" ]]
     then
         echo "执行HBase安装部署"
-        # 替换空格为逗号
-        hbase_nodes=(replaceBlank2Comma ${hbase_slave_node})
-        zookeeper_nodes=(replaceBlank2Comma ${zookeeper_node})
-        # 部署HBase服务：
+        zookeeper_node=${RoleListDict["zookeeper"]}
+        hbase_master_node=${RoleListDict["hbase_master"]}
+        hbase_slave_node=${RoleListDict["hbase_slave"]}
+        hbase_nodes=$(replaceBlank2Comma ${hbase_slave_node})
+        zookeeper_nodes=$(replaceBlank2Comma ${zookeeper_node})
         sh hbase-install.sh -m ${hbase_master_node} -s ${hbase_nodes} -z ${zookeeper_nodes}
     else
         echo "不需要执行HBase安装部署"
     fi
 
     # （8）根据当前角色安装zookeeper：
-    sh zookeeper-install.sh -q ${zookeeper_nodes}
-
+    is_zookeeper=$(substr ${HostRole} "zookeeper")
+    if [ is_zookeeper == "1" ]
+    then
+        echo "执行zookeeper安装部署"
+        sh zookeeper-install.sh -q ${zookeeper_nodes}
+    else
+        echo "执行zookeeper安装部署"
+    fi
+    
     # （9）安装kafka：
-    # 从role.ini获取kafka对应的节点列表
-    kafka_nodes=${RoleListDict["kafka"]}
-    # 判断当前是否需要安装kafka
-    isKafka=(substr ${kafka_nodes} ${HostRole})
+    isKafka=$(substr ${HostRole} "kafka")
     if [ ${isKafka} == "1" ]
     then
-        echo "执行kafka安装部署" 
-        # 设置kafka配置
+        echo "执行kafka安装部署"
+        kafka_nodes=${RoleListDict["kafka"]}
         setup_kafka "${zookeeper_node}" ${kafka_config}
     else
         echo "不需要执行kafka安装部署"

@@ -63,6 +63,13 @@ echo "set ${hadoop_env_sh} successful!"
 i=1
 while((1==1))  
 do  
+	slave=$(echo ${hadoop_slaves} | grep ",")
+	if [[ "${slave}" == "" ]]
+	    then
+            echo ${hadoop_slaves}>>${slaves} 
+	    break
+	fi
+
         split=`echo ${hadoop_slaves}|cut -d "," -f$i`  
         if [ "${split}" != "" ]  
         then  

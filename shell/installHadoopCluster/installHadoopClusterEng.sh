@@ -4,32 +4,42 @@ declare -A IPListDict
 declare -A RoleListDict
 declare -A NodeRoleDict
 
+cat -v role.ini | tr -d '^M'  > res.ini
+rm -f role.ini
+cp res.ini role.ini
+rm -f res.ini
+cat -v iplist.ini | tr -d '^M'  > iplist2.ini
+rm -f iplist.ini
+cp iplist2.ini iplist.ini
+rm -f iplist2.ini
+
 function getDictContent(){
     declare -a dic=("${!1}")
 
-    echo "start check dict"
+    echo "开始查询字典内容"
 
     for key in $(echo ${!dic[*]})
     do
         echo "$key : ${dic[$key]}"
     done
 
-    echo "end check dict"
+    echo "查询字典内容完毕"
 }
 
 function getAssDictContent(){
     local -A dic
     eval "dic=(${!1})"
 
-    echo "start check dict"
+    echo "开始查询字典内容"
 
     for key in "${!dic[@]}"
     do
         echo "$key : ${dic[$k]}"
     done
 
-    echo "end check dict"
+    echo "查询字典内容完毕"
 }
+
 
 function substr(){
     STRING_A=$1
@@ -37,13 +47,9 @@ function substr(){
 
     if [[ ${STRING_A/${STRING_B}//} == $STRING_A ]]
     then
-        ## is not substring.
-        echo N
-        return 0
+        echo 0
     else
-        ## is substring.
-        echo Y
-        return 1
+        echo 1
     fi
 }
 
@@ -53,51 +59,175 @@ function replaceBlank2Comma(){
     echo ${b}
 }
 
-function installMySQL(){
-    tarfilepath=$1
-    desfilepath=$2
-    filename=$3 
-    tar zvxf ${tarfilepath} -C ${desfilepath}
-    cd ${desfilepath}
-    mv ${filename}/ mysql
-}
 
 function installJDK(){
     tarfilepath=$1
     tarfoldername=$2
     destfilepath=$3
     destfolderename=$4
-    sysintfile=$5
     
-    tar zvxf ${tarfilepath} -C ${destfilepath}
+    eval "tar -zxf ${tarfilepath} -C ${destfilepath}"
     cd ${destfilepath}
     mv ${tarfoldername}/ ${destfolderename}
 
+    sysintfile="/etc/profile"
     echo "export JAVA_HOME=${destfilepath}/${destfolderename}" >> ${sysintfile}
     echo "export PATH=$PATH:$JAVA_HOME/bin:$JAVA_HOME/jre/bin:$PATH" >> ${sysintfile}
     echo "export CLASSPATH=.:$JAVA_HOME/lib:$JAVA_HOME/jre/lib" >> ${sysintfile}
 
-    source ${sysintfile}
+    eval "source ${sysintfile}"
 }
 
+function installMySQL(){
+    
+    #tarfilepath=$1
+    #desfilepath=$2
+    #filename=$3
+    #cnfpath=$4
 
+    tarfilepath='/usr/local/package/mysql-5.7.6-m16-linux-glibc2.5-x86_64.tar.gz'
+    desfilepath='/usr/local/'
+    filename='mysql-5.7.6-m16-linux-glibc2.5-x86_64'
+    cnfpath='/usr/local/package/my.cnf'
+
+    tar -zxf ${tarfilepath} -C ${desfilepath}
+    cd ${desfilepath}
+    mv ${filename}  ./mysql
+    
+    groupadd mysql
+    useradd -r -g mysql mysql
+    chown -R mysql:mysql ./mysql
+    ./mysql/bin/mysqld --initialize-insecure --user=mysql  
+	
+    cp  ${cnfpath} /etc/my.cnf 
+}
+
+function startMySQL(){
+     cd /usr/local/mysql/support-files/
+	 ./mysql.server start
+}
+
+function stopMySQL(){
+     cd /usr/local/mysql/support-files/
+	 ./mysql.server stop
+}
+
+function installELK(){
+    desfilepath='/usr/local/package/'
+    es_tarpath='/usr/local/package/elasticsearch-1.6.0.tar.gz'
+    filename_es='elasticsearch-1.6.0'
+    log_tarpath='/usr/local/package/logstash-1.5.6.tar.gz'
+    filename_log='logstash-1.5.6'
+    kb_tarpath='/usr/local/package/kibana-4.0.3-linux-x64.tar.gz'
+    filename_kb='kibana-4.0.3-linux-x64'
+    fb_tarpath='/usr/local/package/filebeat-1.0.0-x86_64.tar.gz'
+    filename_fb='filebeat-1.0.0-x86_64'
+
+
+    tar -zxf ${es_tarpath} -C ${desfilepath}  
+	    cd ${desfilepath}
+	chmod -R 775 ./elasticsearch-1.6.0	
+	
+    tar -zxf ${log_tarpath} -C ${desfilepath}
+	
+    tar -zxf ${kb_tarpath} -C ${desfilepath}  
+
+    tar -zvxf ${fb_tarpath} -C ${desfilepath}  
+}
+
+function updateYML(){
+   #更新es node name
+   FILE=/usr/local/elasticsearch-1.6.0/config/elasticsearch.yml
+   KEY='node.name: "node_es1"'
+   INSTEAD='node.name: "node_es2"'
+   sed -i  's/'"$KEY"'/'"$INSTEAD"'/g'  $FILE
+   
+   #更新logstash所需conf
+   conf1path='/usr/local/package/beatsfinal.conf'
+   cp ${conf1path}  /usr/local/logstash-1.5.6/
+   cd /usr/local/logstash-1.5.6/
+   FILE=./beatsfinal.conf
+   ipaddr=`ip route show | sed -n '2'p|awk '{print $9}'`
+   KEY="0.0.0.0"
+   sed -i  's/'"$KEY"'/'"$ipaddr"'/g'  $FILE
+
+   #更新kibana所需conf
+   cd /usr/local/kibana-4.0.3-linux-x64/config/
+   FILE=./kibana.yml
+   ipaddr=`ip route show | sed -n '2'p|awk '{print $9}'`
+   KEY1="0.0.0.0"
+   KEY2="localhost:"
+   sed -i  's/'"$KEY1"'/'"$ipaddr"'/g'  $FILE
+   sed -i  's/'"$KEY2"'/'"$ipaddr":'/g'  $FILE
+
+   
+   #更新filebeat所需 yml
+   conf2path='/usr/local/package/filebeat.yml'
+   cp ${conf2path}  /usr/local/filebeat-1.0.0-x86_64/
+     cd /usr/local/filebeat-1.0.0-x86_64/
+   FILE=./filebeat.yml
+   KEY='#name:'
+   INSTEAD='name: beats1'
+   sed -i  's/'"$KEY"'/'"$INSTEAD"'/g'  $FILE
+}
+
+function startES(){
+    /usr/local/elasticsearch-1.6.0/bin/elasticsearch  -d
+}
+
+function startlogstash(){
+   cd /usr/local/logstash-1.5.6/
+   ./bin/logstash -f ./beatsfinal.conf &
+}
+
+function startkibana(){
+    cd /usr/local//kibana-4.0.3-linux-x64/
+    ./bin/kibana &
+}
+
+function startfilebeat(){
+  cd /usr/local/filebeat-1.0.0-x86_64/
+  ./filebeat -e -c ./filebeat.yml   &
+}
+
+function stopES(){
+    ps -ef | grep elasticsearch | awk '{print $2}'|xargs kill 
+}
+
+function stoplogstash(){
+    ps -ef | grep logstash | awk '{print $2}'|xargs kill
+}
+
+function stopkibana(){
+    ps -ef | grep kibana | awk '{print $2}'|xargs kill
+}
+
+function stopfilebeat(){
+   ps -ef | grep filebeat | awk '{print $2}'|xargs kill
+}
+
+function normalizdinifile(){
+    rolefile=$1
+    iplistfile=$2
+    tmpfile=$3
+
+    cat -v ${rolefile} | tr -d '^M'  > ${tmpfile}
+    rm -f ${rolefile}
+    mv ${tmpfile} role.ini
+    cat -v ${iplistfile} | tr -d '^M'  > ${tmpfile}
+    rm -f ${iplistfile}
+    mv ${tmpfile} iplist.ini
+}
 
 function initIPListDict(){
     file=$1
     source ${file}
-    IPListDict=([node1]=$node1 [node2]=$node2 [node3]=$node3 [node4]=$node4 [node5]=$node5 [node6]=$node6 [node7]=$node7 [node8]=$node8 [node9]=$node9 [node10]=$node10 [node11]=$node11)
+    IPListDict=([node1]=$node1 [node2]=$node2 [node3]=$node3 [node4]=$node4 [node5]=$node5 [node6]=$node6 [node7]=$node7 [node8]=$node8 [node9]=$node9 [node10]=$node10)
 }
 
 function initRoleListDict(){
     file=$1
-    ntp_master=`cat ${file} | awk -F '[=,{}]+' '{for(i=1;i<NF;i++){if($i~/ntp_master/)print $(i+1) }}'`
-    hdfs_master=`cat ${file} | awk -F '[=,{}]+' '{for(i=1;i<NF;i++){if($i~/hdfs_master/)print $(i+1) }}'`
-    hdfs_slave=`cat ${file} | awk -F '[=,{}]+' '{for(i=1;i<NF;i++){if($i~/hdfs_slave/)print $(i+1) }}'`
-    zookeeper=`cat ${file} | awk -F '[=,{}]+' '{for(i=1;i<NF;i++){if($i~/zookeeper/)print $(i+1) }}'`
-    hbase_master=`cat ${file} | awk -F '[=,{}]+' '{for(i=1;i<NF;i++){if($i~/hbase_master/)print $(i+1) }}'`
-    hbase_slave=`cat ${file} | awk -F '[=,{}]+' '{for(i=1;i<NF;i++){if($i~/hbase_slave/)print $(i+1) }}'`
-    kafka=`cat ${file} | awk -F '[=,{}]+' '{for(i=1;i<NF;i++){if($i~/kafka/)print $(i+1) }}'`
-
+    eval "source $1"
     RoleListDict=([ntp_master]=$ntp_master [hdfs_master]=$hdfs_master [hdfs_slave]=$hdfs_slave [zookeeper]=$zookeeper [hbase_master]=$hbase_master [hbase_slave]=$hbase_slave [kafka]=$kafka)
 }
 
@@ -106,8 +236,8 @@ function initNodeRoleDict(){
     file=$1
     tmpfile=$2
     echo `cat $file |awk -F'=' '{split($2,arr,",");for(i=1;i<=length(arr);i++)z[arr[i]]=z[arr[i]]?z[arr[i]]","$1:$1}END{for(y in z)print y"="z[y]}'` >> $tmpfile
-    source $tmpfile
-    NodeRoleDict=([node1]=$node1 [node2]=$node2 [node3]=$node3 [node4]=$node4 [node5]=$node5 [node6]=$node6 [node7]=$node7 [node8]=$node8 [node9]=$node9 [node10]=$node10 [node11]=$node11)
+    eval "source $tmpfile"
+    NodeRoleDict=([node1]=$node1 [node2]=$node2 [node3]=$node3 [node4]=$node4 [node5]=$node5 [node6]=$node6 [node7]=$node7 [node8]=$node8 [node9]=$node9 [node10]=$node10)
     #rm -f $tmpfile
 }
 
@@ -132,6 +262,7 @@ function initNodeRoleDictVar(){
             echo $element
         done
     done
+
 }
 
 
@@ -140,154 +271,31 @@ function changeHostIP(){
     eth=$1
     IP=$2
 
-    echo "${eth} is:"
+    echo "${eth} 内容如下："
     cat ${eth}
+
     sed -i "7a IPADDR=${IP}" ${eth}
     systemctl restart  network.service
-
-    echo "set IP success"
+    echo "设置IP成功"
 }
 
 function write2hosts(){
-    source $1
+    iplist_file=$1
     hostfile=$2
+    source ${iplist_file}
 
-    if [[ ${hdfs_master/","//} != $hdfs_master ]]
-    then
-        i=1
-        while((1==1))
-        do
-            split=`echo $hdfs_master|cut -d "," -f$i`
-            if [ "$split" != "" ]
-            then
-                ((i++))
-                echo "hdfs_master     " ${IPListDict["$split"]} >> ${hostfile}
-            else
-                break
-            fi
-        done
-    else
-        echo "hdfs_master        " ${IPListDict["$hdfs_master"]} >> ${hostfile}
-    fi
-
-
-    if [[ ${ntp_master/","//} != $ntp_master ]]
-    then
-        i=1
-        while((1==1))
-        do
-            split=`echo $ntp_master|cut -d "," -f$i`
-            if [ "$split" != "" ]
-            then
-                ((i++))
-                echo "ntp_master     " ${IPListDict["$split"]} >> ${hostfile}
-            else
-                break
-            fi
-        done
-    else
-        echo "ntp_master        " ${IPListDict["$ntp_master"]} >> ${hostfile}
-    fi
-
-
-    if [[ ${hdfs_slave/","//} != $hdfs_slave ]]
-    then
-        i=1
-        while((1==1))
-        do
-            split=`echo $hdfs_slave|cut -d "," -f$i`
-            if [ "$split" != "" ]
-            then
-                ((i++))
-                echo "hdfs_slave     " ${IPListDict["$split"]} >> ${hostfile}
-            else
-                break
-            fi
-        done
-    else
-        echo "hdfs_slave        " ${IPListDict["$hdfs_slave"]} >> ${hostfile}
-    fi
-
-
-    if [[ ${zookeeper/","//} != $zookeeper ]]
-    then
-        i=1
-        while((1==1))
-        do
-            split=`echo $zookeeper|cut -d "," -f$i`
-            if [ "$split" != "" ]
-            then
-                ((i++))
-                echo "zookeeper     " ${IPListDict["$split"]} >> ${hostfile}
-            else
-                break
-            fi
-        done
-    else
-        echo "zookeeper        " ${IPListDict["$zookeeper"]} >> ${hostfile}
-    fi
-
-
-
-    if [[ ${hbase_master/","//} != $hbase_master ]]
-    then
-        i=1
-        while((1==1))
-        do
-            split=`echo $hbase_master|cut -d "," -f$i`
-            if [ "$split" != "" ]
-            then
-                ((i++))
-                echo "hbase_master     " ${IPListDict["$split"]} >> ${hostfile}
-            else
-                break
-            fi
-        done
-    else
-        echo "hbase_master        " ${IPListDict["$hbase_master"]} >> ${hostfile}
-    fi
-
-
-
-    if [[ ${hbase_slave/","//} != $hbase_slave ]]
-    then
-        i=1
-        while((1==1))
-        do
-            split=`echo $hbase_slave|cut -d "," -f$i`
-            if [ "$split" != "" ]
-            then
-                ((i++))
-                echo "hbase_slave     " ${IPListDict["$split"]} >> ${hostfile}
-            else
-                break
-            fi
-        done
-    else
-        echo "hbase_slave        " ${IPListDict["$hbase_slave"]} >> ${hostfile}
-    fi
-
-
-
-    if [[ ${kafka/","//} != $kafka ]]
-    then
-        i=1
-        while((1==1))
-        do
-            split=`echo $kafka|cut -d "," -f$i`
-            if [ "$split" != "" ]
-            then
-                ((i++))
-                echo "kafka     " ${IPListDict["$split"]} >> ${hostfile}
-            else
-                break
-            fi
-        done
-    else
-        echo "kafka        " ${IPListDict["$kafka"]} >> ${hostfile}
-    fi
+    echo "$node1"" node1" >> ${hostfile}
+    echo "$node2"" node2" >> ${hostfile}
+    echo "$node3"" node3" >> ${hostfile}
+    echo "$node4"" node4" >> ${hostfile}
+    echo "$node5"" node5" >> ${hostfile}
+    echo "$node6"" node6" >> ${hostfile}
+    echo "$node7"" node7" >> ${hostfile}
+    echo "$node8"" node8" >> ${hostfile}
+    echo "$node9"" node9" >> ${hostfile}
+    echo "$node10"" node10" >> ${hostfile}
+    systemctl restart network.service
 }
-
 
 function getCurrentHostName(){
     local_host="`hostname --fqdn`"
@@ -301,7 +309,7 @@ function getCurrentIP(){
 
 function getCurrentHOSTRole(){
     currentHostName=$1
-    currentHostRole=${NodeRoleDict[$currentHostName]}
+    currentHostRole=${NodeRoleDict["$currentHostName"]}
     echo "${currentHostRole}"
 }
 
@@ -311,7 +319,7 @@ function ntp_master_config(){
     sed -i '/# Please consider joining the pool (http:\/\/www.pool.ntp.org\/join.html)./{N;N;N;N;s/.*/server 127.127.1.0\nfudge  127.127.1.0 stratum 10/}' ${file}
     ntpd -c /etc/ntp.conf -p /tmp/ntpd.pid
     chkconfig ntpd on
-    echo "NTP server setup success"
+    echo "完成NTP服务器设置"
 }
 
 function ntp_slaver_config(){
@@ -320,45 +328,56 @@ function ntp_slaver_config(){
     croncontent="*/1 * * * * /usr/sbin/ntpdate $NTP_MASTER_IP"
     cronfile="/var/spool/cron/root"
     sed -i '/# Please consider joining the pool (http:\/\/www.pool.ntp.org\/join.html)./{N;s/.*/server $NTP_MASTER_IP/}' ${file}
-
+    # 创建定时任务
     touch ${cronfile}
     echo "${croncontent}" >> ${cronfile}
     service crond restart
-    echo "NTP client setup success"
+    echo "完成NTP子节点设置"
 }
 
 function ntp_master_deploy(){
-    currentHostRole=$(getCurrentHOSTRole)
-    ntp_config_file=$1
-    ntp_master_ip=$2
+    currenthostname=$1
+    ntp_config_file=$2
+    ntp_master_ip=$3
 
-    echo ${currentHostRole}
-    isContain=(substr ${currentHostRole} "NTP_MASTER")
-    if [${isContain} == "1"]
+    currentHostRole=$(getCurrentHOSTRole ${currenthostname})
+
+    isContain=$(substr ${currentHostRole} "ntp_master")
+    if [ ${isContain} == "1" ]
     then
-        echo "ntp salve"
-        ntp_slaver_config ${ntp_config_file} ${ntp_master_ip}
-        return 0
-    else
-        echo "ntp master"
+        echo "ntp master detected"
         ntp_master_config ${ntp_config_file}
         return 1
+    else
+        echo "ntp salve detected"
+        ntp_slaver_config ${ntp_config_file} ${ntp_master_ip}
+        return 0
     fi
 }
 
-function ssh_node(){
-    USERNAME=$1
-    HOSTS=$2
-    SCRIPT="pwd; ls"
-    for HOSTNAME in ${HOSTS}
+function ssh2nodes(){
+    username=$1
+    iplist=$2
+    script="pwd; ls"
+
+    val=1
+    for currentip in ${iplist}
     do
-        echo "current ssh to : ${HOSTNAME}"
-        ssh -l ${USERNAME} ${HOSTNAME} "${SCRIPT}"
+        echo "current ssh to : ${currentip}"
+        local RESULTS
+        RESULTS=$(ssh -l ${username} ${currentip} "${script}")
+        tmp=`echo $?`
+        if [ "$tmp" == 255 ]
+        then
+            val=0
+            break
+        fi
     done
-    return 1
+    return "$val"
 }
 
 function setup_kafka(){
+    # 获取对应的主机名
     ZOOKEEPER_NODES=$1
     echo "${ZOOKEEPER_NODES}"
     content=""
@@ -367,147 +386,166 @@ function setup_kafka(){
     done
     length=`expr ${#content} - 1`
     content=${content:0:$length}
-    
+
     KAFKA_CONFIG=$2
     sed "/zookeeper.connect=localhost:2181/{s/.*/zookeeper.connect="${content}"/}" ${KAFKA_CONFIG}
 }
 
 
 function testInit(){
-    rm -f /home/wentao/shell/dest/*
+    rm -rf /home/wentao/shell/dest/*
 
     cp /etc/sysconfig/network-scripts/ifcfg-ens33 /home/wentao/shell/dest/
     cp /etc/hosts /home/wentao/shell/dest/
     cp /etc/ntp.conf /home/wentao/shell/dest/
     cp /etc/profile /home/wentao/shell/dest/
     cp /home/wentao/shell/tmp/server.properties.bak /home/wentao/shell/dest/server.properties
-    
+
     HostName=$(getCurrentHostName)
-    echo "current hostname : ${HostName}"
+    echo "当前节点的hostname为：${HostName}"
     new_hostname=$1
     hostname ${new_hostname}
-    echo "change currenthostname to : ${new_hostname}"
+    echo "修改当前节点的hostname为：${new_hostname}"
 
     HostName=$(getCurrentHostName)
     HostIP=$(getCurrentIP)
     HostRole=$(getCurrentHOSTRole ${HostName})
-    echo "hostname change success"
-    echo "current IP : ${HostIP}"
-    echo "current hostname is : ${HostName}"
-    echo "current host role is : ${HostRole}"
+    echo "完成角色切换"
+    echo "当前节点的IP为：${HostIP}"
+    echo "当前节点的hostname为：${HostName}"
+    echo "当前节点的角色为：${HostRole}"
 }
 
 
 function run(){
 
-    ifcfg_file='/home/wentao/shell/dest/ifcfg-ens33'
-    hostsfile='/home/wentao/shell/dest/hosts'
-    ntp_config_file="/home/wentao/shell/dest/ntp.conf"
+    ifcfg_file='/etc/sysconfig/network-scripts/ifcfg-ens18'
+    hostsfile='/etc/hosts'
+    ntp_config_file="/etc/ntp.conf"
     ssh_user='root'
-    tarfilepath="/home/wentao/shell/package/jdk-8u112-linux-x64.tar.gz"
-    tarfoldername="jdk1.8.0_112"
-    destfilepath="/home/wentao/shell/dest/"
-    destfolderename="JDK"
-    sysintfile="/home/wentao/shell/dest/profile"
-    tmpfile="/home/wentao/shell/dest/my.ini"
-    kafka_config='/home/wentao/shell/dest/server.properties'
-    
+    sysintfile="/etc/profile"
 
+    tmpfile="/root/installHadoopCluster/tmp.ini"
+    kafka_config='/usr/local/hadoop/kafka_2.11-0.9.0.1/config/server.properties'
+    rolefile="/root/installHadoopCluster/role.ini"
+    iplistfile="/root/installHadoopCluster/iplist.ini"
 
-    #read -p "setup ip : " IP
-    #read -p "input role.ini path : " rolefile
-    #read -p "input iplist.ini path : " iplistfile
+    # 输入当前节点要设置的IP地址：
+    read -p "输入当前节点需要设置的IP地址：" IP
 
-    IP='192.168.15.133'
-    rolefile="/home/wentao/shell/installHadoopCluster/role.ini"
-    iplistfile="/home/wentao/shell/installHadoopCluster/iplist.ini"
+    echo "确认当前输入IP : ${IP}"
+    echo "确认当前role.ini路径 : ${rolefile}"
+    echo "确认当前iplist.ini路径 : ${iplistfile}"
 
-
-    echo ${IP}
-    echo ${rolefile}
-    echo ${iplistfile}
-
-
-    initIPListDict ${IPListFile}
+    #normalizdinifile ${iplistfile} ${rolefile} ${tmpfile}
+    initIPListDict ${iplistfile}
     initRoleListDict ${rolefile}
     initNodeRoleDict ${rolefile} ${tmpfile}
 
-    getDictContent IPListDict[@]
-    getDictContent RoleListDict[@]
-    getDictContent NodeRoleDict[@]
-
-
-    installJDK ${tarfilepath} ${tarfoldername} ${destfilepath} ${destfolderename} ${sysintfile}
+    echo "查看IPListDict字典："
+    for k in "${!IPListDict[@]}"
+    do
+        echo $k '--' ${IPListDict[$k]}
+    done
+    echo "查看RoleListDict字典："
+    for k in "${!RoleListDict[@]}"
+    do
+        echo $k '--' ${RoleListDict[$k]}
+    done
+    echo "查看NodeRoleDict字典："
+    for k in "${!NodeRoleDict[@]}"
+    do
+        echo $k '--' ${NodeRoleDict[$k]}
+    done
 
 
     changeHostIP ${ifcfg_file} ${IP}
-    write2hosts ${rolefile} ${hostsfile}
+
+    write2hosts ${iplistfile} ${hostsfile}
 
     HostName=$(getCurrentHostName)
     HostIP=$(getCurrentIP)
     HostRole=$(getCurrentHOSTRole ${HostName})
-    echo "current IP : ${HostIP}"
-    echo "current hostname is : ${HostName}"
-    echo "current host role is : ${HostRole}"
+    echo "当前节点的IP为：${HostIP}"
+    echo "当前节点的hostname为：${HostName}"
+    echo "当前节点的角色为：${HostRole}"
 
     ntp_master_node=${RoleListDict["ntp_master"]}
-    ntp_master_ip=${IPListDict[$ntp_master_node]}
-    ntp_master_deploy ${ntp_config_file} ${ntp_master_ip}
+    ntp_master_ip=${IPListDict["$ntp_master_node"]}
+    ntp_master_deploy ${HostName} ${ntp_config_file} ${ntp_master_ip}
 
-    host=${!IPListDict[*]}
-    host=(${host[@]/${IP}/})
-    ssh_result=$(ssh_node ${ssh_user} ${host})
-    if [ssh_result == "1"]
+    host=${IPListDict[*]}
+    delete=(${IP})
+    host=( "${host[@]/$delete}" )
+    ssh2nodes ${ssh_user} ${host}
+    ssh_result=`echo $?`
+    if [ ${ssh_result} == "1" ]
     then
-        echo "SSH test success"
+        echo "SSH链接测试成功"
     else
-        echo "SSH test fail"
+        echo "SSH链接测试失败"
     fi
 
-    hdfs_master_node=${RoleListDict["hdfs_master"]}
-    hdfs_second_master_node=""
-    hdfs_slave_node=${RoleListDict["hdfs_slave"]}
-    isHDFS_master=(substr ${hdfs_master_node} ${HostRole})
-    isHDFS_salve=(substr ${hdfs_slave_node} ${HostRole})
-    if [[${isHDFS_master} == "1" || ${isHDFS_salve} == "1" ]]
+    # HDFS安装：
+    isHDFS_master=$(substr ${HostRole} "hdfs_master")
+    isHDFS_salve=$(substr ${HostRole} "hdfs_slave")
+    echo "is hdfs master:${isHDFS_master}"
+    echo "is hdfs slave:${isHDFS_salve}"
+    if [[ ${isHDFS_master} == "1" || ${isHDFS_salve} == "1" ]]
     then
-        echo "HDFS install start"
-        hdfs_slave_nodes=(replaceBlank2Comma ${hdfs_slave_node})
+        echo "执行HDFS安装部署"
+        hdfs_master_node=${RoleListDict["hdfs_master"]}
+        hdfs_second_master_node=""
+        hdfs_slave_node=${RoleListDict["hdfs_slave"]}
+        hdfs_slave_nodes=$(replaceBlank2Comma ${hdfs_slave_node})
         sh hadoop-install.sh -m ${hdfs_master_node} -n ${hdfs_second_master_node} -s ${hdfs_slave_nodes}
     else
-        echo "HDFS donot need to install"
+        echo "不需要执行HDFS安装部署"
     fi
 
-    zookeeper_node=${RoleListDict["zookeeper"]}
-    hbase_master_node=${RoleListDict["hbase_master"]}
-    hbase_slave_node=${RoleListDict["hbase_slave"]}
-    isHBase_master=(substr ${hbase_master_node} ${HostRole})
-    isHBase_salve=(substr ${hbase_slave_node} ${HostRole})
-    if [[${isHBase_master} == "1" || ${isHBase_salve} == "1" ]]
+    # HBase安装：
+    isHBase_master=$(substr ${HostRole} "hbase_master")
+    isHBase_salve=$(substr ${HostRole} "hbase_slave")
+    if [[ ${isHBase_master} == "1" || ${isHBase_salve} == "1" ]]
     then
-        echo "HBase install start"
-        hbase_nodes=(replaceBlank2Comma ${hbase_slave_node})
-        zookeeper_nodes=(replaceBlank2Comma ${zookeeper_node})
+        echo "执行HBase安装部署"
+        zookeeper_node=${RoleListDict["zookeeper"]}
+        hbase_master_node=${RoleListDict["hbase_master"]}
+        hbase_slave_node=${RoleListDict["hbase_slave"]}
+        echo ${hbase_slave_node}
+        hbase_nodes=$(replaceBlank2Comma ${hbase_slave_node})
+        echo ${hbase_nodes}
+        zookeeper_nodes=$(replaceBlank2Comma ${zookeeper_node})
         sh hbase-install.sh -m ${hbase_master_node} -s ${hbase_nodes} -z ${zookeeper_nodes}
     else
-        echo "HBase donot need to install"
+        echo "不需要执行HBase安装部署"
     fi
 
-    sh zookeeper-install.sh -q ${zookeeper_nodes}
 
-    kafka_nodes=${RoleListDict["kafka"]}
-    isKafka=(substr ${kafka_nodes} ${HostRole})
-    if [ ${isKafka} == "1"]
+    is_zookeeper=$(substr ${HostRole} "zookeeper")
+    if [ is_zookeeper == "1" ]
     then
-        echo "kafka install start"
+        echo "执行zookeeper安装部署"
+        sh zookeeper-install.sh -q ${zookeeper_nodes}
+    else
+        echo "执行zookeeper安装部署"
+    fi
+
+    
+    isKafka=$(substr ${HostRole} "kafka")
+    if [ ${isKafka} == "1" ]
+    then
+        echo "执行kafka安装部署"
+        kafka_nodes=${RoleListDict["kafka"]}
         setup_kafka "${zookeeper_node}" ${kafka_config}
     else
-        echo "kafka donot need to install"
+        echo "不需要执行kafka安装部署"
     fi
     
-    echo "finish node install"
+
+    echo "当前节点安装部署结束"
 }
 
 
-testInit "node1"
+#testInit "node1"
 run
