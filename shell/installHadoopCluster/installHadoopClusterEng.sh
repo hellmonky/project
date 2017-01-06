@@ -341,6 +341,7 @@ function ntp_master_deploy(){
     ntp_master_ip=$3
 
     currentHostRole=$(getCurrentHOSTRole ${currenthostname})
+    echo "当前NTP入口：${currentHostRole}"
 
     isContain=$(substr ${currentHostRole} "ntp_master")
     if [ ${isContain} == "1" ]
