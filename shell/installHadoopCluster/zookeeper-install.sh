@@ -25,6 +25,7 @@ zookeeper_home='/usr/local/hadoop/zookeeper-3.4.6'
 zookeeper_config_folder=${zookeeper_home}/conf
 
 cp ${zookeeper_config_folder}/zoo_sample.cfg ${zookeeper_config_folder}/zoo.cfg
+echo ${zookeeper_config_folder}
 zoo_cfg=${zookeeper_config_folder}/zoo.cfg
 
 if [ ! -d "${zookeeper_home}/data" ]; then  
@@ -38,20 +39,9 @@ this_hostname=`hostname`
 myid=`grep ${this_hostname} /etc/hosts|awk '{print $1}'|cut -d. -f4`
 echo ${myid}>$zookeeper_data/myid
 
-
-sed -i -e '/autopurge.purgeInterval$/d' ${zoo_cfg}
-
 i=1
-while((1==1)) 
+while((1==1))  
 do  
-	quorum=$(echo ${zookeeper_quorum} | grep ",")
-	if [[ "${quorum}" == "" ]]
-	    then
-            id=`grep ${zookeeper_quorum} /etc/hosts|awk '{print $1}'|cut -d. -f4`		
-	    echo "server.${id}=${zookeeper_quorum}:2888:3888">>${zoo_cfg} 
-	    break
-	fi
-
         split=`echo ${zookeeper_quorum}|cut -d "," -f$i`  
         if [ "${split}" != "" ]  
         then  
