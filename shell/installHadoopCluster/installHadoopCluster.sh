@@ -143,15 +143,15 @@ function stopMySQL(){
 	 /usr/local/mysql/support-files/mysql.server stop
 }
 
-# 获取当前节点上MySQL是否启动：
-function getCurrentNodeMySQLStatus(){
+# 获取当前节点上MySQL的PID，如果是0就没有启动，否则就是对应的PID值：
+function getPID_MySQL(){
         bool=` ps -ef | grep mysql |grep -v grep | grep -v sh |awk '{print $2}' `
         if [  "$bool" = "" ];then
            echo "MySQL is not running"
            return 0
         else
            echo "MySQL is running"
-           return 1
+           return ${bool}
         fi
 }
 
@@ -490,6 +490,25 @@ function check_zookeeper(){
 }
 
 #------------------- 安装HBase ------------------
+# Hbase子节点安装：需要对每一个Hbase节点进行安装
+function hbase_node_install(){
+    hbase_master_node=$1
+    hbase_nodes=$2
+    zookeeper_nodes=$3
+    sh hbase-install.sh -m ${hbase_master_node} -s ${hbase_nodes} -z ${zookeeper_nodes}
+}
+
+
+# HBase主节点服务启动，需要将当前所有子节点都部署完毕才能正确执行
+function hbase_master_startup(){
+    /usr/local/hadoop/hbase-1.2.0/bin/start-hbase.sh
+}
+
+# HBase主节点服务关闭，只需要对主节点关闭即可
+function hbase_master_stop(){
+    /usr/local/hadoop/hbase-1.2.0/bin/stop-hbase.sh
+}
+
 # 检查当前节点上HBase是否启动，如果启动返回PID，否则返回0：
 function check_hbase(){
     hbase_pid=`jps | grep 'HMaster' | cut -d ' ' -f 1`
@@ -506,6 +525,26 @@ function check_hbase(){
 }
 
 #------------------- 安装HDFS ------------------
+# HDFS子节点安装：需要对每一个HDFS节点进行安装
+function hdfs_node_install(){
+    hdfs_master_node=$1
+    hdfs_second_master_node=$2
+    hdfs_slave_nodes=$3
+    sh hadoop-install.sh -m ${hdfs_master_node} -n ${hdfs_second_master_node} -s ${hdfs_slave_nodes}
+}
+
+# HDFS主节点服务启动，需要将当前所有子节点都部署完毕才能正确执行
+function hdfs_master_startup(){
+    /usr/local/hadoop/hadoop-2.6.0/sbin/start-dfs.sh
+    /usr/local/hadoop/hadoop-2.6.0/sbin/start-yarn.sh
+}
+
+# HDFS主节点服务关闭，只需要将主节点关闭即可
+function hdfs_master_stop(){
+    /usr/local/hadoop/hadoop-2.6.0/sbin/stop-dfs.sh
+    /usr/local/hadoop/hadoop-2.6.0/sbin/stop-yarn.sh
+}
+
 # 检查当前节点上HDFS是否启动，如果启动返回PID，否则返回0：
 function check_hdfs(){
     hdfs_pid=`jps | grep -w 'NameNode' | cut -d ' ' -f 1`
@@ -624,9 +663,7 @@ function changeHostIP(){
     # 修改IP地址
     echo "要修改的网卡配置文件为："
     echo ${eth}
-    echo "获取内容："
-    cat ${eth}
-
+    
     # 修改输入修改ip地址
     sed -i "13c IPADDR=${IP}" ${eth}
     # 重启网卡
@@ -934,13 +971,7 @@ function install(){
         hdfs_second_master_node=${RoleListDict["hdfs_master"]}
         hdfs_slave_node=${RoleListDict["hdfs_slave"]}
         hdfs_slave_nodes=$(replaceBlank2Comma ${hdfs_slave_node})
-
-        echo ${hdfs_master_node}
-        echo ${hdfs_second_master_node}
-        echo ${hdfs_slave_node}
-        echo ${hdfs_slave_nodes}
-
-        sh hadoop-install.sh -m ${hdfs_master_node} -n ${hdfs_second_master_node} -s ${hdfs_slave_nodes}
+        hdfs_node_install ${hdfs_master_node} ${hdfs_second_master_node} ${hdfs_slave_nodes}
         echo "执行HDFS安装部署成功"
     else
         echo "不需要执行HDFS安装部署"
@@ -957,7 +988,7 @@ function install(){
         hbase_slave_node=${RoleListDict["hbase_slave"]}
         hbase_nodes=$(replaceBlank2Comma ${hbase_slave_node})
         zookeeper_nodes=$(replaceBlank2Comma ${zookeeper_node})
-        sh hbase-install.sh -m ${hbase_master_node} -s ${hbase_nodes} -z ${zookeeper_nodes}
+        hbase_node_install ${hbase_master_node} ${hbase_nodes} ${zookeeper_nodes}
         echo "执行HBase安装部署成功"
     else
         echo "不需要执行HBase安装部署"
@@ -1118,8 +1149,7 @@ function startup(){
     if [ ${is_HDFS_master} == "1" ]
     then
         echo "开始执行HDFS主节点服务启动"
-        /usr/local/hadoop/hadoop-2.6.0/sbin/start-dfs.sh
-        /usr/local/hadoop/hadoop-2.6.0/sbin/start-yarn.sh
+        hdfs_master_startup
         echo "执行HDFS主节点服务启动成功"
     else
         echo "不需要执行HDFS主节点服务启动"
@@ -1130,7 +1160,7 @@ function startup(){
     if [ ${is_HBase_master} == "1" ]
     then
         echo "开始执行HBase主节点服务启动"
-        /usr/local/hadoop/hbase-1.2.0/bin/start-hbase.sh
+        hbase_master_startup
         echo "执行HBase主节点服务启动成功"
     else
         echo "不需要执行HBase主节点服务启动"
@@ -1230,7 +1260,7 @@ function stop(){
     if [ ${is_HBase_master} == "1" ]
     then
         echo "开始执行HBase主节点关闭"
-        /usr/local/hadoop/hbase-1.2.0/bin/stop-hbase.sh
+        hbase_master_stop
         echo "执行HBase主节点关闭成功"
     else
         echo "不需要执行HBase主节点关闭"
@@ -1241,8 +1271,7 @@ function stop(){
     if [ ${is_HDFS_master} == "1" ]
     then
         echo "开始执行HDFS主节点关闭"
-        /usr/local/hadoop/hadoop-2.6.0/sbin/stop-dfs.sh
-        /usr/local/hadoop/hadoop-2.6.0/sbin/stop-yarn.sh
+        hdfs_master_stop
         echo "执行HDFS主节点关闭成功"
     else
         echo "不需要执行HDFS主节点关闭"
