@@ -370,7 +370,7 @@ function installKafka(){
     # 修改文件命令，设置breaker的id为当前机器的hostname
     KAFKA_CONFIG=$2
     #sed -i "s/^zookeeper.connect=/zookeeper.connect=${content}/g" ${KAFKA_CONFIG}
-    sed "/zookeeper.connect=localhost:2181/{s/.*/zookeeper.connect="${content}"/}" ${KAFKA_CONFIG}
+    sed -i "/zookeeper.connect=localhost:2181/{s/.*/zookeeper.connect="${content}"/}" ${KAFKA_CONFIG}
 }
 
 # 启动kafka：需要在每一个kafka节点上进行启动，[kafka 集群--3个broker 3个zookeeper创建实战](http://www.cnblogs.com/davidwang456/p/4238536.html)
@@ -663,7 +663,7 @@ function changeHostIP(){
     # 修改IP地址
     echo "要修改的网卡配置文件为："
     echo ${eth}
-    
+
     # 修改输入修改ip地址
     sed -i "13c IPADDR=${IP}" ${eth}
     # 重启网卡
