@@ -33,7 +33,7 @@ hbase_config_folder=${hbase_home}/conf
 hbase_env_sh=${hbase_config_folder}/hbase-env.sh
 hbase_site_xml=${hbase_config_folder}/hbase-site.xml
 regionservers=${hbase_config_folder}/regionservers
-zookeeper_data_dir=/usr/share/hadoop/zookeeper-3.4.6/data
+zookeeper_data_dir=/usr/local/hadoop/zookeeper-3.4.6/data
 
 sed -i -e '/<configuration>/,/<\/configuration>/d' ${hbase_site_xml}
 echo -e "<configuration>\n</configuration>" >> ${hbase_site_xml}
@@ -44,6 +44,7 @@ echo "set ${hbase_site_xml} successful!"
 
 sed -i -e "s@# export JAVA_HOME=\/usr\/java\/jdk1.6.0\/@export JAVA_HOME=${JAVA_HOME}@g" ${hbase_env_sh}
 sed -i -e "s@# export HBASE_MANAGES_ZK=true@export HBASE_MANAGES_ZK=false@g" ${hbase_env_sh}
+sed -i -e "s@# export HBASE_PID_DIR@export HBASE_PID_DIR@g" ${hbase_env_sh}
 echo "set ${hbase_env_sh} successful!"
 
 
