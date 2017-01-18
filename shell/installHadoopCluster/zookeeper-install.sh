@@ -24,19 +24,32 @@ done
 zookeeper_home='/usr/local/hadoop/zookeeper-3.4.6'
 zookeeper_config_folder=${zookeeper_home}/conf
 
+if [ -f "${zookeeper_config_folder}/zoo.cfg" ]; then
+	rm -f ${zookeeper_config_folder}/zoo.cfg
+fi
+
 cp ${zookeeper_config_folder}/zoo_sample.cfg ${zookeeper_config_folder}/zoo.cfg
 echo ${zookeeper_config_folder}
 zoo_cfg=${zookeeper_config_folder}/zoo.cfg
 
-if [ ! -d "${zookeeper_home}/data" ]; then  
-    mkdir "${zookeeper_home}/data"
+
+
+#if [ ! -d "${zookeeper_home}/data" ]; then  
+#    mkdir "${zookeeper_home}/data"
+#fi 
+
+if [ -d "${zookeeper_home}/data" ]; then  
+    rm -rf ${zookeeper_home}/data
 fi 
+
+mkdir "${zookeeper_home}/data"
 
 zookeeper_data=${zookeeper_home}/data
 touch ${zookeeper_data}/myid
 #myid=`ip addr show|grep "inet "|grep -v "127.0.0.1"|grep -v "192.168.122.1"|grep -v "172.17.0.1"|cut -d: -f2|cut -d \/ -f1|cut -d. -f4|awk '{print $1}'`
 this_hostname=`hostname`
 myid=`grep ${this_hostname} /etc/hosts|awk '{print $1}'|cut -d. -f4`
+echo -n "">$zookeeper_data/myid
 echo ${myid}>$zookeeper_data/myid
 
 i=1

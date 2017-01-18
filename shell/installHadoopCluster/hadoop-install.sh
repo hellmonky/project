@@ -1,11 +1,11 @@
 #! /bin/bash
 
 if [[ $# -lt 1 ]];then 
-    echo "USAGE:`basename $0` [-m master_hostname] [-n secondary_namenode] [-s slave_hostname1,slave_hostname2,...]" 
+    echo "USAGE:`basename $0` [-m master_hostname] [-n secondary_namenode] [-s slave_hostname1,slave_hostname2,...] [-r replication_num]" 
     exit 1 
 fi 
 
-while getopts :m:n:s:h opt; do
+while getopts :m:n:s:r:h opt; do
     case $opt in
 	m)
 	    hadoop_master_hostname=$OPTARG
@@ -13,12 +13,15 @@ while getopts :m:n:s:h opt; do
 	n) 
 	    hadoop_secondary_namenode_hostname=$OPTARG
 	    ;;
-    	s)
-            hadoop_slaves=$OPTARG
-            ;;
+    s)
+        hadoop_slaves=$OPTARG
+        ;;
+	r)
+		dfs_replication=$OPTARG
+		;;
 	h)
 	    echo "USAGE:"
-	    echo "#hadoop-install.sh [-m master_hostname] [-n secondary_namenode] [-s slave_hostname1,slave_hostname2,...]"
+	    echo "#hadoop-install.sh [-m master_hostname] [-n secondary_namenode] [-s slave_hostname1,slave_hostname2,...] [-r replication_num]"
 	    ;;
 	\?)
             echo "Invalid arg: $OPTARG"
@@ -28,6 +31,7 @@ while getopts :m:n:s:h opt; do
 done	
 
 JAVA_HOME='/usr/java/jdk1.8.0_92/'
+hdfs_data_dir='/home/hdfs'
 hadoop_home='/usr/local/hadoop/hadoop-2.6.0'
 hadoop_config_folder=${hadoop_home}/etc/hadoop
 hdfs_site_xml=${hadoop_config_folder}/hdfs-site.xml
@@ -47,7 +51,8 @@ echo -n "">${slaves}
 sed -i -e "/<configuration>/a\\\t<property>\n\t\t<name>fs.defaultFS<\/name>\n\t\t<value>hdfs:\/\/${hadoop_master_hostname}:9000<\/value>\n\t<\/property>\n\t<property>\n\t\t<name>hadoop.tmp.dir<\/name>\n\t\t<value>file:${hadoop_home}\/tmp<\/value>\n\t\t<description>A base for other temporary directories.<\/description>\n\t<\/property>" ${core_site_xml}
 echo "set ${core_site_xml} successful!"
 
-sed -i -e "/<configuration>/a\\\t<property>\n\t\t<name>dfs.namenode.secondary.http-address<\/name>\n\t\t<value>${hadoop_secondary_namenode_hostname}:50090<\/value>\n\t<\/property>\n\t<property>\n\t\t<name>dfs.namenode.name.dir<\/name>\n\t\t<value>file:${hadoop_home}/dfs/name<\/value>\n\t<\/property>\n\t<property>\n\t\t<name>dfs.datanode.data.dir<\/name>\n\t\t<value>file:${hadoop_home}/dfs/data<\/value>\n\t<\/property>" ${hdfs_site_xml}
+sed -i -e "/<configuration>/a\\\t<property>\n\t\t<name>dfs.namenode.secondary.http-address<\/name>\n\t\t<value>${hadoop_secondary_namenode_hostname}:50090<\/value>\n\t<\/property>\n\t<property>\n\t\t<name>dfs.namenode.name.dir<\/name>\n\t\t<value>file:${hdfs_data_dir}/dfs/name<\/value>\n\t<\/property>\n\t<property>\n\t\t<name>dfs.datanode.data.dir<\/name>\n\t\t<value>file:${hdfs_data_dir}/dfs/data<\/value>\n\t<\/property>\n\t<property>\n\t\t<name>dfs.replication<\/name>\n\t\t<value>${dfs_replication}<\/value>\n\t<\/property>" ${hdfs_site_xml}
+
 echo "set ${hdfs_site_xml} successful!"
 
 sed -i -e "/<configuration>/a\\\t<property>\n\t\t<name>yarn.resourcemanager.hostname<\/name>\n\t\t<value>${hadoop_master_hostname}<\/value>\n\t<\/property>" ${yarn_site_xml}

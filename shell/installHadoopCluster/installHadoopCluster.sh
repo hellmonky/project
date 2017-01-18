@@ -12,6 +12,8 @@ declare -A IPListDict
 declare -A RoleListDict
 # 定义全局RoleList字典（关联数组）
 declare -A NodeRoleDict
+# 定义全局Role对应的IP字典
+declare -A RoleIPDict
 
 
 ################ Stage 1: 基础工具定义 ################
@@ -160,7 +162,7 @@ function addRomoteLoginUser(){
     mysqllogin="root"
     mysqlpass="" 
     newusername="iscas"
-    newuserpass="12345"
+    newuserpass="123456"
     sql_createuser="CREATE USER '${newusername}' IDENTIFIED BY '${newuserpass}';";
     sql_grant1="GRANT ALL PRIVILEGES ON *.* TO '${newusername}'@'%';";
     sql_grant2="GRANT ALL PRIVILEGES ON *.* TO '${newusername}'@'localhost';";
@@ -220,6 +222,25 @@ function localhostlogin(){
     /usr/local/mysql/bin/mysql --user=$mysqllogin --password=$mysqlpass -h$ipaddr;
 }
 
+#------------------- ELK相关的IP获取 ------------------
+function GetELKIP(){
+   name=$1
+   OLD_IFS="$IFS"
+   IFS=","
+   arr=(${RoleIPDict[$name]})
+   IFS="$OLD_IFS"
+   ELKIP=""
+   for element in ${arr[@]}   
+   do  
+       if [ $name == "es" ];then
+          ELKIP=$ELKIP"\""$element"\""","
+       else
+          ELKIP=$ELKIP$element","
+       fi
+   done
+   ELKIP=${ELKIP%?}
+   echo $ELKIP
+ }
 
 #------------------- 安装ES ------------------
 # 解压缩ES
@@ -376,7 +397,8 @@ function installKafka(){
 # 启动kafka：需要在每一个kafka节点上进行启动，[kafka 集群--3个broker 3个zookeeper创建实战](http://www.cnblogs.com/davidwang456/p/4238536.html)
 function startupKafka(){
     kafka_root_path=$1
-    ${kafka_root_path}/bin/kafka-server-start.sh ${kafka_root_path}/config/server.properties
+    # 需要在后台启动kafka，并且将返回信息写入空或者写入到启动日志中
+    ${kafka_root_path}/bin/kafka-server-start.sh ${kafka_root_path}/config/server.properties 1>/dev/null 2>&1 &
 }
 
 # 关闭kafka：
@@ -530,12 +552,31 @@ function hdfs_node_install(){
     hdfs_master_node=$1
     hdfs_second_master_node=$2
     hdfs_slave_nodes=$3
-    sh hadoop-install.sh -m ${hdfs_master_node} -n ${hdfs_second_master_node} -s ${hdfs_slave_nodes}
+    hdfs_replication_number=$4
+    sh hadoop-install.sh -m ${hdfs_master_node} -n ${hdfs_second_master_node} -s ${hdfs_slave_nodes} -r ${hdfs_replication_number}
 }
 
 # 需要在HDFS的主节点上执行格式化，其他节点不需要：
 function hdfs_master_format(){
     hadoop namenode -format
+}
+
+# 需要在HDFS启动前进行初始化设置
+function hdfs_master_prepare(){
+    # 关闭safe mode：
+    hdfs dfsadmin -safemode leave
+    # 创建一个HDFS根目录，作为当前项目的起始目录：
+    hadoop fs -mkdir /datasong
+    # 更改HDFS文件夹的权限
+    hadoop fs -chmod 777 /datasong
+
+    # 总体流程描述：
+    # 出现问题：[connection-refused](http://stackoverflow.com/questions/28661285/hadoop-cluster-setup-java-net-connectexception-connection-refused)
+    # 然后尝试的解决方式为：
+    # 1 需要退出safe mode : hdfs dfsadmin -safemode leave
+    # 2 然后更改HDFS文件夹的权限？是否需要：hadoop fs -chmod 777 /datasong
+    # 3 然后要SSH开放HDFS访问需要的默认9000的的端口：[](http://stackoverflow.com/questions/28661285/hadoop-cluster-setup-java-net-connectexception-connection-refused)
+    # 4 将node添加到ssh的konwn hosts文件中：Permanently added 'node3,192.168.1.152' (ECDSA) to the list of known hosts.
 }
 
 
@@ -611,6 +652,25 @@ function initNodeRoleDict(){
     NodeRoleDict=([node1]=$node1 [node2]=$node2 [node3]=$node3 [node4]=$node4 [node5]=$node5 [node6]=$node6 [node7]=$node7 [node8]=$node8 [node9]=$node9 [node10]=$node10)
     rm -f $tmpfile
 }
+
+# 初始化角色包含的IP列表：
+function initRoleIPDict(){
+   for key in $(echo ${!RoleListDict[*]})
+   do
+      OLD_IFS="$IFS"
+      IFS=","
+      arr=(${RoleListDict[$key]})
+      IFS="$OLD_IFS"
+      roleallip=""
+      for element in ${arr[@]}   
+        do  
+          element=${IPListDict[$element]}
+          roleallip=$roleallip$element","
+        done
+      roleallip=${roleallip%?}
+      RoleIPDict[$key]=$roleallip
+  done
+ }
 
 # 初始化节点角色字典：
 function initNodeRoleDictVar(){
@@ -793,7 +853,7 @@ function ssh2nodes(){
         # 如果ssh执行失败，返回255，执行成功返回0
         if [ "$tmp" == 0 ]
         then
-            echo "当前节点SSH ${currentip} 成功"
+            echo "当前节点SSH到 ${currentip} 成功"
         else
             val=0
             break
@@ -962,9 +1022,14 @@ function install(){
         echo "开始执行MySQL节点安装"
         installMySQL ${mysql_tarfilepath} ${mysql_desfilepath} ${mysql_filename} ${mysql_cnfpath}
         echo "执行MySQL节点安装成功"
+        # 添加远程登陆用户
+        echo "开始添加MySQL远程登陆用户：iscas 密码：123456"
+        addRomoteLoginUser
+        echo "添加MySQL远程登陆用户成功"
     else
         echo "不需要执行MySQL节点安装"
     fi
+    
 
     # （6）根据当前角色安装HDFS：
     is_HDFS_master=$(substr ${HostRole} "hdfs_master")
@@ -977,7 +1042,9 @@ function install(){
         hdfs_second_master_node=${RoleListDict["hdfs_master"]}
         hdfs_slave_node=${RoleListDict["hdfs_slave"]}
         hdfs_slave_nodes=$(replaceBlank2Comma ${hdfs_slave_node})
-        hdfs_node_install ${hdfs_master_node} ${hdfs_second_master_node} ${hdfs_slave_nodes}
+        # 设置数据备份数为3，这个通过其他参数修改
+        hdfs_replication_number=3
+        hdfs_node_install ${hdfs_master_node} ${hdfs_second_master_node} ${hdfs_slave_nodes} ${hdfs_replication_number}
         echo "执行HDFS安装部署成功"
     else
         echo "不需要执行HDFS安装部署"
@@ -991,6 +1058,16 @@ function install(){
     else
         echo "不需要执行HDFS主节点格式化"
     fi
+    # 然后执行主节点的初始化设置
+    if [ ${is_HDFS_master} == "1" ]
+    then
+        echo "开始执行HDFS主节点初始化设置"
+        hdfs_master_prepare
+        echo "执行HDFS主节点初始化设置成功"
+    else
+        echo "不需要执行HDFS主节点初始化设置"
+    fi
+
 
     # （7）根据当前角色安装HBase：
     is_HBase_master=$(substr ${HostRole} "hbase_master")
@@ -1049,7 +1126,9 @@ function install(){
     then
         echo "开始执行filebeat安装部署"
         installfilebeat
-        updatefilebeat ${HostName} ${IP}
+        name="logstash"
+        RoleIP=`GetELKIP $name`
+        updatefilebeat ${HostName} ${RoleIP}
         echo "执行filebeat安装部署成功"
     else
         echo "不需要执行filebeat安装部署"
@@ -1061,7 +1140,9 @@ function install(){
     then
         echo "开始执行logstash安装部署"
         installlogstash
-        updatelogstash ${IP}
+        name="es"
+        RoleIP=`GetELKIP $name`
+        updatelogstash ${RoleIP}
         echo "执行logstash安装部署成功"
     else
         echo "不需要执行logstash安装部署"
@@ -1073,7 +1154,10 @@ function install(){
     then
         echo "开始执行kibana安装部署"
         installkibana
-        updatekibana ${IP}
+        name="es" 
+        RoleIP=`GetELKIP $name`
+        RoleIP=${RoleIP:1:13}
+        updatekibana ${RoleIP}
         echo "执行kibana安装部署成功"
     else
         echo "不需要执行kibana安装部署"
