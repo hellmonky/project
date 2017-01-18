@@ -923,6 +923,8 @@ function initEnv(){
     initRoleListDict ${rolefile}
     # 初始化NodeRoleDict：
     initNodeRoleDict ${rolefile} ${tmpfile}
+    # 初始化角色IP列表：
+    initRoleIPDict
 
     # 查看字典初始化结果：传入关联数组作为参数
     echo "初始化IPListDict字典内容："
@@ -1022,10 +1024,6 @@ function install(){
         echo "开始执行MySQL节点安装"
         installMySQL ${mysql_tarfilepath} ${mysql_desfilepath} ${mysql_filename} ${mysql_cnfpath}
         echo "执行MySQL节点安装成功"
-        # 添加远程登陆用户
-        echo "开始添加MySQL远程登陆用户：iscas 密码：123456"
-        addRomoteLoginUser
-        echo "添加MySQL远程登陆用户成功"
     else
         echo "不需要执行MySQL节点安装"
     fi
@@ -1049,25 +1047,7 @@ function install(){
     else
         echo "不需要执行HDFS安装部署"
     fi
-    # 然后执行主节点的格式化
-    if [ ${is_HDFS_master} == "1" ]
-    then
-        echo "开始执行HDFS主节点格式化"
-        hdfs_master_format
-        echo "执行HDFS主节点格式化成功"
-    else
-        echo "不需要执行HDFS主节点格式化"
-    fi
-    # 然后执行主节点的初始化设置
-    if [ ${is_HDFS_master} == "1" ]
-    then
-        echo "开始执行HDFS主节点初始化设置"
-        hdfs_master_prepare
-        echo "执行HDFS主节点初始化设置成功"
-    else
-        echo "不需要执行HDFS主节点初始化设置"
-    fi
-
+    
 
     # （7）根据当前角色安装HBase：
     is_HBase_master=$(substr ${HostRole} "hbase_master")
@@ -1102,7 +1082,8 @@ function install(){
     if [ ${is_Kafka} == "1" ]
     then
         echo "开始执行kafka安装部署"
-        kafka_nodes=${RoleListDict["kafka"]}
+        # 重新获取，这儿zookeeper_node被清空了
+        zookeeper_node=${RoleListDict["zookeeper"]}
         installKafka "${zookeeper_node}" ${kafka_config}
         echo "执行kafka安装部署成功"
     else
@@ -1325,6 +1306,52 @@ function startup(){
     echo "当前节点服务启动结束"
 }
 
+# 服务准备：针对HDFS等
+function initHadoop(){
+    ################# 初始化全局变量 #################
+    initEnv
+
+    # （3）获取当前角色:
+    HostName=$(getCurrentHostName)
+    HostIP=$(getCurrentIP)
+    HostRole=$(getCurrentHOSTRole ${HostName})
+    echo "当前节点的IP为：${HostIP}"
+    echo "当前节点的hostname为：${HostName}"
+    echo "当前节点的角色为：${HostRole}"
+
+    is_HDFS_master=$(substr ${HostRole} "hdfs_master")
+
+    # HDFS执行主节点的格式化
+    if [ ${is_HDFS_master} == "1" ]
+    then
+        echo "开始执行HDFS主节点格式化"
+        hdfs_master_format
+        echo "执行HDFS主节点格式化成功"
+    else
+        echo "不需要执行HDFS主节点格式化"
+    fi
+    # HDFS执行主节点的初始化设置
+    if [ ${is_HDFS_master} == "1" ]
+    then
+        echo "开始执行HDFS主节点初始化设置"
+        hdfs_master_prepare
+        echo "执行HDFS主节点初始化设置成功"
+    else
+        echo "不需要执行HDFS主节点初始化设置"
+    fi
+
+    is_MySQL=$(substr ${HostRole} "mysql")
+    if [ ${is_MySQL} == "1" ]
+    then
+        # 添加远程登陆用户
+        echo "开始添加MySQL远程登陆用户：iscas 密码：123456"
+        addRomoteLoginUser
+        echo "添加MySQL远程登陆用户成功"
+    else
+        echo "不需要执行MySQL节点安装"
+    fi
+}
+
 # 服务停止：
 function stop(){
     ################# 初始化全局变量 #################
@@ -1465,6 +1492,7 @@ function stop(){
 function entery(){
     echo "执行安装，请输入：install "
     echo "执行服务启动，请输入：startup "
+    echo "执行服务初始化，请输入：init"
     echo "执行服务停止，请输入：stop"
     read -p "输入要进行的选项：" option
 
@@ -1477,6 +1505,10 @@ function entery(){
     then
         echo "开始执行服务启动程序："
         startup
+    elif [ ${option} == "init" ]
+    then
+        echo "开始执行服务初始化程序："
+        initHadoop
     elif [ ${option} == "stop" ]
     then
         echo "开始执行服务停止程序："
