@@ -47,17 +47,21 @@ sed -i -e "s@# export HBASE_MANAGES_ZK=true@export HBASE_MANAGES_ZK=false@g" ${h
 sed -i -e "s@# export HBASE_PID_DIR@export HBASE_PID_DIR@g" ${hbase_env_sh}
 echo "set ${hbase_env_sh} successful!"
 
+if [[ $(echo ${hbase_regionservers_hostname}) =~ "," ]]; then  
+    i=1
+	while((1==1))  
+	do  
+		split=`echo ${hbase_regionservers_hostname}|cut -d "," -f$i`  
+		if [ "${split}" != "" ]  
+		then  
+			((i++))  
+			echo ${split}>>${regionservers}  
+		else  
+			break  
+		fi  
+	done
+else
+	echo ${hbase_regionservers_hostname}>>${regionservers}
+fi  
 
-i=1
-while((1==1))  
-do  
-        split=`echo ${hbase_regionservers_hostname}|cut -d "," -f$i`  
-        if [ "${split}" != "" ]  
-        then  
-                ((i++))  
-		echo ${split}>>${regionservers}  
-        else  
-                break  
-        fi  
-done
 echo "set ${regionservers} successful!"  

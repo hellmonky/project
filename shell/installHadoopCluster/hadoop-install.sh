@@ -64,17 +64,22 @@ echo "set ${hadoop_env_sh} successful!"
 
 #sed -f test.sed $hive_site_conf > $hadoop_config_folder/text1.xml
 
+if [[ $(echo ${hadoop_slaves}) =~ "," ]]; then  
+	i=1
+	while((1==1))  
+		do  
+			split=`echo ${hadoop_slaves}|cut -d "," -f$i`  
+			if [ "${split}" != "" ]  
+			then  
+					((i++))  
+			echo ${split}>>${slaves}  
+			else  
+					break  
+			fi  
+		done
+else
+	echo ${hadoop_slaves}>>${slaves}
+fi  
 
-i=1
-while((1==1))  
-do  
-        split=`echo ${hadoop_slaves}|cut -d "," -f$i`  
-        if [ "${split}" != "" ]  
-        then  
-                ((i++))  
-		echo ${split}>>${slaves}  
-        else  
-                break  
-        fi  
-done
+
 echo "set ${slaves} successful!"  

@@ -52,19 +52,24 @@ myid=`grep ${this_hostname} /etc/hosts|awk '{print $1}'|cut -d. -f4`
 echo -n "">$zookeeper_data/myid
 echo ${myid}>$zookeeper_data/myid
 
+
+if [[ $(echo ${zookeeper_quorum}) =~ "," ]]; then  
 i=1
 while((1==1))  
-do  
+	do  
         split=`echo ${zookeeper_quorum}|cut -d "," -f$i`  
         if [ "${split}" != "" ]  
         then  
-                ((i++))  
-		id=`grep ${split} /etc/hosts|awk '{print $1}'|cut -d. -f4`		
-		echo "server.${id}=${split}:2888:3888">>${zoo_cfg}
+            ((i++))  
+			id=`grep ${split} /etc/hosts|awk '{print $1}'|cut -d. -f4`		
+			echo "server.${id}=${split}:2888:3888">>${zoo_cfg}
         else  
-                break  
+            break  
         fi  
-done
+	done
+else
+	echo ${zookeeper_quorum}>>${zoo_cfg}
+fi  
 
 sed -i -e "s@dataDir=\/tmp\/zookeeper@dataDir=${zookeeper_data}@g" ${zoo_cfg}
 
