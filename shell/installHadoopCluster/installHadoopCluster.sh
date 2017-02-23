@@ -546,6 +546,15 @@ function check_hbase(){
     fi
 }
 
+# hbase主节点清空：用于在Hbase的主节点上将当前服务停止清空
+function hbase_master_cleanup(){
+    current_hbase_master_bin=$1
+    # 在主节点上执行关闭和清空
+    cd ${current_hbase_master_bin}
+    stop-hbase.sh 
+    hbase-cleanup.sh --cleanAll
+}
+
 #------------------- 安装HDFS ------------------
 # HDFS子节点安装：需要对每一个HDFS节点进行安装
 function hdfs_node_install(){
@@ -590,6 +599,12 @@ function hdfs_master_startup(){
 function hdfs_master_stop(){
     /usr/local/hadoop/hadoop-2.6.0/sbin/stop-dfs.sh
     /usr/local/hadoop/hadoop-2.6.0/sbin/stop-yarn.sh
+}
+
+# HDFS主节点上删除当前文件系统中的非空目录
+function hdfs_master_cleanup(){
+    current_cleanup_dir=$1
+    hadoop fs -rmr ${current_cleanup_dir}
 }
 
 # 检查当前节点上HDFS是否启动，如果启动返回PID，否则返回0：
@@ -862,6 +877,27 @@ function ssh2nodes(){
     return "$val"
 }
 
+# 使用sshpass来传递参数，并且执行命令：
+function SSHhost(){
+    # 基本使用方式为：
+    # /usr/bin/sshpass -p${password} ssh ${user}@${host_ip} "${command}"
+    # 参考：
+    # [Linux命令之非交互SSH密码验证-sshpass](http://blog.csdn.net/wangjunjun2008/article/details/19993395)
+    # [sshpass 的使用](http://zhujiangtao.blog.51cto.com/6387416/1397843)
+
+    user=$1
+    host_ip=$2
+    password=$3
+    script="pwd; ls"
+    RESULTS=$(/usr/bin/sshpass -p${password} ssh ${user}@${host_ip} "${script}")
+    tmp=`echo $?`
+        if [ "$tmp" == 0 ]
+        then
+            echo "当前节点SSH到 ${host_ip} 成功"
+        else
+            echo "当前节点SSH到 ${host_ip} 失败"
+        fi
+}
 
 ################ Stage 6: 测试环境设置 ################
 # 测试脚本执行前的环境设置
